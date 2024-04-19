@@ -1,0 +1,60 @@
+H	VN:Z:1.0
+S	source	*	LN:i:source
+S	sink	*	LN:i:sink
+S	00	*	LN:i:C
+S	01	*	LN:i:C
+S	02	*	LN:i:C
+S	03	*	LN:i:G
+S	04	*	LN:i:G
+S	05	*	LN:i:G
+S	06	*	LN:i:A
+S	07	*	LN:i:A
+S	08	*	LN:i:A
+S	10	*	LN:i:T
+S	11	*	LN:i:T
+S	12	*	LN:i:T
+S	13	*	LN:i:G
+S	14	*	LN:i:G
+S	15	*	LN:i:A
+S	16	*	LN:i:A
+S	17	*	LN:i:A
+S	18	*	LN:i:A
+S	20	*	LN:i:T
+S	21	*	LN:i:T
+S	22	*	LN:i:T
+S	23	*	LN:i:G
+S	24	*	LN:i:G
+S	25	*	LN:i:C
+S	26	*	LN:i:C
+S	27	*	LN:i:C
+S	28	*	LN:i:C
+L	source	+	00	+	*
+L	source	+	10	+	*
+L	source	+	20	+	*
+L	00	+	01	+	*
+L	01	+	02	+	*
+L	02	+	03	+	*
+L	03	+	04	+	*
+L	04	+	05	+	*
+L	05	+	06	+	*
+L	06	+	07	+	*
+L	07	+	08	+	*
+L	08	+	sink	+	*
+L	10	+	11	+	*
+L	11	+	12	+	*
+L	12	+	13	+	*
+L	13	+	14	+	*
+L	14	+	15	+	*
+L	15	+	16	+	*
+L	16	+	17	+	*
+L	17	+	18	+	*
+L	18	+	sink	+	*
+L	20	+	21	+	*
+L	21	+	22	+	*
+L	22	+	23	+	*
+L	23	+	24	+	*
+L	24	+	25	+	*
+L	25	+	26	+	*
+L	26	+	27	+	*
+L	27	+	28	+	*
+L	28	+	sink	+	*
