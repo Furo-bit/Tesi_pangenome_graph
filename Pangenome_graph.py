@@ -8,9 +8,13 @@ import matplotlib.pyplot as plt
 #----------------------------------------------------------------------------------------
 # Block class
 class block:
-    def __init__(self, base, sequence_id, begin_column, end_column):
+    def __init__(self, id, base, sequence_id, begin_column, end_column):
+        self.id = id
         self.base = base
-        self.sequences_ids = [sequence_id] 
+        if isinstance(sequence_id, list):
+            self.sequences_ids = sequence_id
+        else:
+            self.sequences_ids = [sequence_id]
         self.begin_column = begin_column
         self.end_column = end_column
 #----------------------------------------------------------------------------------------
@@ -40,10 +44,11 @@ def build_blocks_from_sequence_matrix(sequence_matrix):
     for sequence_index in range(num_seq):
         for base_index in range(num_bases):
             block_matrix[sequence_index][base_index] = block(
-            sequence_matrix[sequence_index][base_index],
-            sequence_index,
-            base_index,
-            base_index 
+                "B"+str(sequence_index)+str(base_index),
+                sequence_matrix[sequence_index][base_index],
+                sequence_index,
+                base_index,
+                base_index 
             )
     return block_matrix
 
@@ -58,8 +63,7 @@ def build_graph(matrix):
     G.add_node("sink", label = "sink")
     for i in range(rows):
         for j in range(cols):
-            ij_string = str(i) + str(j)
-            G.add_node(ij_string, label=matrix[i][j].base, row=i, col=j)
+            G.add_node(matrix[i][j].id, label=matrix[i][j].base, row=i, col=j)
 
     # Calculate positions for nodes based on "row" and "col" attributes
     pos = {}
@@ -74,14 +78,15 @@ def build_graph(matrix):
 
     # Add edges
     for i in range(rows):
-        G.add_edge("source", str(i)+str(0), label = str(i))
-        G.add_edge(str(i)+str(cols-1), "sink", label = str(i))
+        G.add_edge("source", matrix[i][0].id, label = matrix[i][0].sequences_ids)
+        G.add_edge(matrix[i][cols-1].id, "sink", label = matrix[i][cols-1].sequences_ids)
         for j in range(cols):
-            ij_string = str(i) + str(j)
-            ij1_string = str(i) + str(j+1)
             # Connect horizontally adjacent nodes
-            if j < cols - 1:
-                G.add_edge(ij_string, ij1_string, label = str(i))
+            if j < cols - 1 and matrix[i][j].id != matrix[i][j+1].id:
+                G.add_edge(matrix[i][j].id,
+                            matrix[i][j+1].id,
+                             label = list(set(matrix[i][j].sequences_ids).intersection(set(matrix[i][j+1].sequences_ids))) 
+                        )
     
     return G, pos
 
@@ -95,6 +100,28 @@ def graph_to_gfa(graph, filename):
         for u, v, data in graph.edges(data=True):
             f.write(f"L\t{u}\t+\t{v}\t+\t*\n")  # L-line for each edge
 
+#Merge two block in one
+def merge_two_blocks(block_1, block_2, how):
+    if how == "column_union":
+        new_bases = block_1.base + block_2.base 
+        new_block = block(
+            block_1.id,
+            new_bases,
+            block_1.sequences_ids,
+            block_1.begin_column,
+            block_2.end_column
+        )
+    if how == "row_union":
+        new_sequences_ids = block_1.sequences_ids + block_2.sequences_ids
+        new_block = block(
+            block_1.id,
+            block_1.base,
+            new_sequences_ids,
+            block_1.begin_column,
+            block_1.end_column
+        )
+    return new_block
+
 #----------------------------------------------------------------------------------------
 # Main
 # Read msa from file
@@ -103,8 +130,19 @@ sequences = read_fasta(filename)
 
 # Convert sequences to matrix
 sequence_matrix = sequences_to_matrix(sequences) 
+
 # Convert each base in a block
 block_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
+
+#Test merge columns
+new_block_test_columns = merge_two_blocks(block_matrix[0][0], block_matrix[0][1], "column_union")
+block_matrix[0][0] = new_block_test_columns
+block_matrix[0][1] = new_block_test_columns
+
+#Test merge rows
+new_block_test_rows = merge_two_blocks(block_matrix[1][0], block_matrix[2][0], "row_union")
+block_matrix[1][0] = new_block_test_rows
+block_matrix[2][0] = new_block_test_rows
 
 # Create the pangenome graph using the blocks
 # Each node is a block
