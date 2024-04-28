@@ -1,56 +1,22 @@
 H	VN:Z:1.0
 S	source	*	LN:i:source
 S	sink	*	LN:i:sink
-S	B00	*	LN:i:CC
-S	B02	*	LN:i:C
-S	B03	*	LN:i:G
-S	B04	*	LN:i:G
-S	B05	*	LN:i:G
-S	B06	*	LN:i:A
-S	B07	*	LN:i:A
-S	B08	*	LN:i:A
-S	B10	*	LN:i:T
+S	B00	*	LN:i:CCCGGGAAA
+S	B10	*	LN:i:TTTGG
 S	B11	*	LN:i:T
 S	B12	*	LN:i:T
 S	B13	*	LN:i:G
 S	B14	*	LN:i:G
-S	B15	*	LN:i:A
-S	B16	*	LN:i:A
-S	B17	*	LN:i:A
-S	B18	*	LN:i:A
-S	B21	*	LN:i:T
-S	B22	*	LN:i:T
-S	B23	*	LN:i:G
-S	B24	*	LN:i:G
-S	B25	*	LN:i:C
-S	B26	*	LN:i:C
-S	B27	*	LN:i:C
-S	B28	*	LN:i:C
+S	B15	*	LN:i:AAAA
+S	B25	*	LN:i:CCCC
 L	source	+	B00	+	*
 L	source	+	B10	+	*
-L	B00	+	B02	+	*
-L	B02	+	B03	+	*
-L	B03	+	B04	+	*
-L	B04	+	B05	+	*
-L	B05	+	B06	+	*
-L	B06	+	B07	+	*
-L	B07	+	B08	+	*
-L	B08	+	sink	+	*
+L	B00	+	sink	+	*
 L	B10	+	B11	+	*
-L	B10	+	B21	+	*
+L	B10	+	B25	+	*
 L	B11	+	B12	+	*
 L	B12	+	B13	+	*
 L	B13	+	B14	+	*
 L	B14	+	B15	+	*
-L	B15	+	B16	+	*
-L	B16	+	B17	+	*
-L	B17	+	B18	+	*
-L	B18	+	sink	+	*
-L	B21	+	B22	+	*
-L	B22	+	B23	+	*
-L	B23	+	B24	+	*
-L	B24	+	B25	+	*
-L	B25	+	B26	+	*
-L	B26	+	B27	+	*
-L	B27	+	B28	+	*
-L	B28	+	sink	+	*
+L	B15	+	sink	+	*
+L	B25	+	sink	+	*

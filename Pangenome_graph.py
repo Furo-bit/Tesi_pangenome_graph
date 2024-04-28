@@ -64,7 +64,7 @@ def build_graph(matrix):
     for i in range(rows):
         for j in range(cols):
             G.add_node(matrix[i][j].id, label=matrix[i][j].base, row=i, col=j)
-
+            
     # Calculate positions for nodes based on "row" and "col" attributes
     pos = {}
     for node, data in G.nodes(data=True):
@@ -75,7 +75,6 @@ def build_graph(matrix):
         else:
             pos[node] = (data['col'], -data['row'])  # Invert row value for upward display
        
-
     # Add edges
     for i in range(rows):
         G.add_edge("source", matrix[i][0].id, label = matrix[i][0].sequences_ids)
@@ -111,6 +110,7 @@ def merge_two_blocks(block_1, block_2, how):
             block_1.begin_column,
             block_2.end_column
         )
+        print("Merged block ", block_1.id, "with block ", block_2.id, "by columns")
     if how == "row_union":
         new_sequences_ids = block_1.sequences_ids + block_2.sequences_ids
         new_block = block(
@@ -120,7 +120,46 @@ def merge_two_blocks(block_1, block_2, how):
             block_1.begin_column,
             block_1.end_column
         )
+        print("Merged block ", block_1.id, "with block ", block_2.id, "by rows")
     return new_block
+
+#Update blocks data
+def update_blocks_with_same_id(block_matrix, new_block):
+    rows = len(block_matrix)
+    cols = len(block_matrix[0])
+    for i in range(rows):
+        for j in range(cols):  
+            if block_matrix[i][j].id == new_block.id:
+                block_matrix[i][j] = new_block
+    return block_matrix  
+
+
+# Euristichs
+def local_search(block_matrix):
+    rows = len(block_matrix)
+    cols = len(block_matrix[0])
+    for i in range(rows):
+        for j in range(cols):
+            # Try to merge two blocks by rows
+            if i+1 != rows:
+                if block_matrix[i][j].begin_column == block_matrix[i+1][j].begin_column and block_matrix[i][j].end_column == block_matrix[i+1][j].end_column and block_matrix[i][j].base == block_matrix[i+1][j].base:
+                    new_block = merge_two_blocks(block_matrix[i][j], block_matrix[i+1][j], "row_union")
+                    block_matrix[i][j] = new_block
+                    block_matrix[i+1][j] = new_block
+                    block_matrix = update_blocks_with_same_id(block_matrix, new_block)
+            # Try to merge two blocks by columns
+            if j+1 != cols:
+                if block_matrix[i][j].sequences_ids == block_matrix[i][j+1].sequences_ids:
+                    new_block = merge_two_blocks(block_matrix[i][j], block_matrix[i][j+1], "column_union")
+                    # DA FIXARE QUA AGGIORNAMENTO ID 
+                    block_matrix[i][j] = new_block
+                    block_matrix[i][j+1] = new_block
+                    block_matrix = update_blocks_with_same_id(block_matrix, new_block)
+    return block_matrix
+
+
+
+
 
 #----------------------------------------------------------------------------------------
 # Main
@@ -134,15 +173,8 @@ sequence_matrix = sequences_to_matrix(sequences)
 # Convert each base in a block
 block_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
 
-#Test merge columns
-new_block_test_columns = merge_two_blocks(block_matrix[0][0], block_matrix[0][1], "column_union")
-block_matrix[0][0] = new_block_test_columns
-block_matrix[0][1] = new_block_test_columns
-
-#Test merge rows
-new_block_test_rows = merge_two_blocks(block_matrix[1][0], block_matrix[2][0], "row_union")
-block_matrix[1][0] = new_block_test_rows
-block_matrix[2][0] = new_block_test_rows
+#Euristich
+block_matrix = local_search(block_matrix)
 
 # Create the pangenome graph using the blocks
 # Each node is a block
