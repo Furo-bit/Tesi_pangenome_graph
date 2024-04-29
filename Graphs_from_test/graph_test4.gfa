@@ -1,0 +1,25 @@
+H	VN:Z:1.0
+S	source	*	LN:i:source
+S	sink	*	LN:i:sink
+S	B0.0	*	LN:i:--gtccgtaaga
+S	B1.0	*	LN:i:acgtacgtac
+S	B1.10	*	LN:i:ga
+S	B2.10	*	LN:i:-a
+S	B3.10	*	LN:i:ta
+S	B4.0	*	LN:i:t
+S	B4.1	*	LN:i:cgtacgtaa-a
+S	B5.1	*	LN:i:-gt-tttac-a
+L	source	+	B0.0	+	*
+L	source	+	B1.0	+	*
+L	source	+	B4.0	+	*
+L	B0.0	+	sink	+	*
+L	B1.0	+	B1.10	+	*
+L	B1.0	+	B2.10	+	*
+L	B1.0	+	B3.10	+	*
+L	B1.10	+	sink	+	*
+L	B2.10	+	sink	+	*
+L	B3.10	+	sink	+	*
+L	B4.0	+	B4.1	+	*
+L	B4.0	+	B5.1	+	*
+L	B4.1	+	sink	+	*
+L	B5.1	+	sink	+	*

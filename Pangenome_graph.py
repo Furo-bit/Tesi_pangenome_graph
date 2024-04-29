@@ -44,7 +44,7 @@ def build_blocks_from_sequence_matrix(sequence_matrix):
     for sequence_index in range(num_seq):
         for base_index in range(num_bases):
             block_matrix[sequence_index][base_index] = block(
-                "B"+str(sequence_index)+str(base_index),
+                "B"+str(sequence_index)+"."+str(base_index),
                 sequence_matrix[sequence_index][base_index],
                 sequence_index,
                 base_index,
@@ -124,12 +124,12 @@ def merge_two_blocks(block_1, block_2, how):
     return new_block
 
 #Update blocks data
-def update_blocks_with_same_id(block_matrix, new_block):
+def update_blocks_with_same_id(block_matrix, new_block, id1, id2):
     rows = len(block_matrix)
     cols = len(block_matrix[0])
     for i in range(rows):
         for j in range(cols):  
-            if block_matrix[i][j].id == new_block.id:
+            if block_matrix[i][j].id == id1 or block_matrix[i][j].id == id2:
                 block_matrix[i][j] = new_block
     return block_matrix  
 
@@ -144,17 +144,12 @@ def local_search(block_matrix):
             if i+1 != rows:
                 if block_matrix[i][j].begin_column == block_matrix[i+1][j].begin_column and block_matrix[i][j].end_column == block_matrix[i+1][j].end_column and block_matrix[i][j].base == block_matrix[i+1][j].base:
                     new_block = merge_two_blocks(block_matrix[i][j], block_matrix[i+1][j], "row_union")
-                    block_matrix[i][j] = new_block
-                    block_matrix[i+1][j] = new_block
-                    block_matrix = update_blocks_with_same_id(block_matrix, new_block)
+                    block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[i][j].id, block_matrix[i+1][j].id)
             # Try to merge two blocks by columns
             if j+1 != cols:
                 if block_matrix[i][j].sequences_ids == block_matrix[i][j+1].sequences_ids:
                     new_block = merge_two_blocks(block_matrix[i][j], block_matrix[i][j+1], "column_union")
-                    # DA FIXARE QUA AGGIORNAMENTO ID 
-                    block_matrix[i][j] = new_block
-                    block_matrix[i][j+1] = new_block
-                    block_matrix = update_blocks_with_same_id(block_matrix, new_block)
+                    block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[i][j].id, block_matrix[i][j+1].id)
     return block_matrix
 
 
@@ -164,8 +159,8 @@ def local_search(block_matrix):
 #----------------------------------------------------------------------------------------
 # Main
 # Read msa from file
-filename = "Test_allignments/test.fa"  # Change this to your .fa file path
-sequences = read_fasta(filename)
+filename = "test2"  # Change this to your .fa file
+sequences = read_fasta("Test_allignments/"+filename+".fa")
 
 # Convert sequences to matrix
 sequence_matrix = sequences_to_matrix(sequences) 
@@ -185,12 +180,12 @@ nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labe
 nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
 
 # Save the image to a file
-plt.savefig('Graphs_from_test/graph_image.png')
+plt.savefig('Graphs_from_test/graph_image_'+filename+'.png')
 
 # Show the graph
 plt.show()
 
 #Save graph
-file_path = "Graphs_from_test/graph.gfa"
+file_path = 'Graphs_from_test/graph_'+filename+'.gfa'
 graph_to_gfa(graph, file_path)
 
