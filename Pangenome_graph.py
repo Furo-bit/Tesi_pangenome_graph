@@ -140,6 +140,12 @@ def generate_random_number(seed, start, end):
     random.seed(seed)
     return random.randint(start, end)
 
+
+def generate_random_numbers(seed, start, end, count):
+    random.seed(seed)
+    return [random.randint(start, end) for _ in range(count)]
+
+
 # Euristichs
 def local_search(block_matrix):
     rows = len(block_matrix)
@@ -163,20 +169,20 @@ def local_search(block_matrix):
 def local_search_random(block_matrix):
     
     # Ask the user for a seed
-    #seed = int(input("Insert the seed for the random number: "))
+    seed = int(input("Insert the seed for the random number: "))
 
     rows = len(block_matrix)
     cols = len(block_matrix[0])
     cell_total = rows * cols
+    # Generate a random numbers using the user-provided seed
+    random_numbers = generate_random_numbers(seed, 1, cell_total, cell_total*2)
     # Create a boolean matrix 
     boolean_matrix = [[False] * cols for _ in range(rows)]
 
-    for x in range(cell_total * 2):
-        # Generate a random number using the user-provided seed
-        random_number = random.randint( 1, cell_total)
+    for x in random_numbers:
         # Transform the number in matrix indeces 
-        row_index = (random_number - 1) // cols
-        col_index = (random_number - 1) % cols
+        row_index = (x - 1) // cols
+        col_index = (x - 1) % cols
         # Check if the block is visited, if not then visit and try to merge
         if boolean_matrix[row_index][col_index] == False :
             boolean_matrix[row_index][col_index] = True
@@ -186,7 +192,7 @@ def local_search_random(block_matrix):
                     if (block_matrix[row_index][col_index].begin_column == block_matrix[row_index-1][col_index].begin_column and
                             block_matrix[row_index][col_index].end_column == block_matrix[row_index-1][col_index].end_column and
                             block_matrix[row_index][col_index].base == block_matrix[row_index-1][col_index].base):
-                        new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index-1][col_index], "row_union")
+                        new_block = merge_two_blocks(block_matrix[row_index-1][col_index], block_matrix[row_index][col_index], "row_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index-1][col_index].id)
             # Check down block       
             if row_index+1 < rows:
@@ -197,10 +203,10 @@ def local_search_random(block_matrix):
                         new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index+1][col_index], "row_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index+1][col_index].id)
             # Check left block
-            if col_index+1 >= 0:
+            if col_index-1 >= 0:
                 if block_matrix[row_index][col_index].id != block_matrix[row_index][col_index-1].id:
                     if block_matrix[row_index][col_index].sequences_ids == block_matrix[row_index][col_index-1].sequences_ids:
-                        new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index][col_index-1], "column_union")
+                        new_block = merge_two_blocks(block_matrix[row_index][col_index-1], block_matrix[row_index][col_index], "column_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index][col_index-1].id)
             # Check right block
             if col_index+1 < cols:
@@ -209,14 +215,15 @@ def local_search_random(block_matrix):
                         new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index][col_index+1], "column_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index][col_index+1].id)
 
-    return block_matrix, "lsr"
+    return block_matrix, "lsr", str(seed)
 
 
 
 #----------------------------------------------------------------------------------------
 # Main
+
 # Read msa from file
-filename = "test6"  # Change this to your .fa file
+filename = "test4"  # Change this to your .fa file
 sequences = read_fasta("Test_allignments/"+filename+".fa")
 
 # Convert sequences to matrix
@@ -225,11 +232,11 @@ sequence_matrix = sequences_to_matrix(sequences)
 # Convert each base in a block
 block_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
 
-#Euristich
-block_matrix, euristich = local_search_random(block_matrix)
+# Euristich
+block_matrix, euristich, seed = local_search_random(block_matrix)
 
 # Create the pangenome graph using the blocks
-# Each node is a block
+# Each block is a node
 graph, pos = build_graph(block_matrix)
 
 # Draw the graph 
@@ -237,12 +244,12 @@ nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labe
 nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
 
 # Save the image to a file
-plt.savefig('Graphs_from_test/graph_image_'+filename+'_'+euristich+'.png')
+plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_'+seed+'.png')
 
 # Show the graph
 plt.show()
 
 #Save graph
-file_path = 'Graphs_from_test/graph_'+filename+'_'+euristich+'.gfa'
+file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_'+seed+'.gfa'
 graph_to_gfa(graph, file_path)
 
