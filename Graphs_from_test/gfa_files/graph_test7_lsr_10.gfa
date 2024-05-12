@@ -1,0 +1,114 @@
+H	VN:Z:1.0
+S	source	*	LN:i:source
+S	sink	*	LN:i:sink
+S	B0.0	*	LN:i:--g
+S	B0.3	*	LN:i:t
+S	B0.4	*	LN:i:c
+S	B0.5	*	LN:i:c
+S	B0.6	*	LN:i:gt
+S	B0.8	*	LN:i:a
+S	B0.9	*	LN:i:ag
+S	B0.11	*	LN:i:a
+S	B0.12	*	LN:i:a
+S	B1.0	*	LN:i:a
+S	B1.1	*	LN:i:c
+S	B1.2	*	LN:i:g
+S	B1.4	*	LN:i:a
+S	B1.9	*	LN:i:c
+S	B1.10	*	LN:i:g
+S	B2.10	*	LN:i:-
+S	B3.6	*	LN:i:g
+S	B3.7	*	LN:i:t
+S	B3.10	*	LN:i:t
+S	B4.0	*	LN:i:t
+S	B4.7	*	LN:i:taa-
+S	B5.1	*	LN:i:-
+S	B5.4	*	LN:i:-tttac-
+S	B6.0	*	LN:i:-
+S	B6.4	*	LN:i:aagtta
+S	B6.10	*	LN:i:a
+S	B6.12	*	LN:i:c
+S	B7.0	*	LN:i:act
+S	B7.4	*	LN:i:acct
+S	B7.8	*	LN:i:a
+S	B7.9	*	LN:i:c
+S	B8.4	*	LN:i:a--t
+S	B8.10	*	LN:i:-
+S	B9.0	*	LN:i:a--
+S	B9.4	*	LN:i:acct
+S	B9.9	*	LN:i:at
+S	B10.0	*	LN:i:t
+S	B10.1	*	LN:i:c
+S	B10.2	*	LN:i:ggaagt
+S	B10.9	*	LN:i:a
+S	B10.10	*	LN:i:--c
+S	B11.1	*	LN:i:-gt-cct
+S	B11.9	*	LN:i:c
+L	source	+	B0.0	+	[0]
+L	source	+	B1.0	+	[1, 2, 3]
+L	source	+	B4.0	+	[4, 5]
+L	source	+	B6.0	+	[6]
+L	source	+	B7.0	+	[7, 8]
+L	source	+	B9.0	+	[9]
+L	source	+	B10.0	+	[10, 11]
+L	B0.0	+	B0.3	+	[0]
+L	B0.3	+	B0.4	+	[0]
+L	B0.3	+	B1.4	+	[1, 2, 3, 4]
+L	B0.3	+	B5.4	+	[5]
+L	B0.3	+	B6.4	+	[6]
+L	B0.3	+	B7.4	+	[7]
+L	B0.3	+	B8.4	+	[8]
+L	B0.3	+	B9.4	+	[9]
+L	B0.4	+	B0.5	+	[0]
+L	B0.5	+	B0.6	+	[0, 1, 2]
+L	B0.5	+	B3.6	+	[3, 4]
+L	B0.6	+	B0.8	+	[0, 1, 2]
+L	B0.8	+	B0.9	+	[0]
+L	B0.8	+	B1.9	+	[1, 2, 3]
+L	B0.9	+	B0.11	+	[0]
+L	B0.11	+	B0.12	+	[0, 1, 2, 3, 4, 5]
+L	B0.11	+	B6.12	+	[8, 9, 6, 7]
+L	B0.12	+	sink	+	[0, 1, 2, 3, 4, 5]
+L	B1.0	+	B1.1	+	[1, 2, 3]
+L	B1.1	+	B1.2	+	[1, 2, 3, 4]
+L	B1.2	+	B0.3	+	[1, 2, 3, 4, 5, 6]
+L	B1.4	+	B0.5	+	[1, 2, 3, 4]
+L	B1.9	+	B1.10	+	[1]
+L	B1.9	+	B2.10	+	[2]
+L	B1.9	+	B3.10	+	[3]
+L	B1.10	+	B0.11	+	[1]
+L	B2.10	+	B0.11	+	[2]
+L	B3.6	+	B3.7	+	[3]
+L	B3.6	+	B4.7	+	[4]
+L	B3.7	+	B0.8	+	[3]
+L	B3.10	+	B0.11	+	[3]
+L	B4.0	+	B1.1	+	[4]
+L	B4.0	+	B5.1	+	[5]
+L	B4.7	+	B0.11	+	[4]
+L	B5.1	+	B1.2	+	[5, 6]
+L	B5.4	+	B0.11	+	[5]
+L	B6.0	+	B5.1	+	[6]
+L	B6.4	+	B6.10	+	[6]
+L	B6.10	+	B0.11	+	[6, 7]
+L	B6.12	+	sink	+	[6, 7, 8, 9]
+L	B7.0	+	B0.3	+	[8, 7]
+L	B7.4	+	B7.8	+	[7]
+L	B7.8	+	B7.9	+	[8, 7]
+L	B7.8	+	B9.9	+	[9]
+L	B7.8	+	B10.9	+	[10]
+L	B7.8	+	B11.9	+	[11]
+L	B7.9	+	B6.10	+	[7]
+L	B7.9	+	B8.10	+	[8]
+L	B8.4	+	B7.8	+	[8]
+L	B8.10	+	B0.11	+	[8]
+L	B9.0	+	B0.3	+	[9]
+L	B9.4	+	B7.8	+	[9]
+L	B9.9	+	B0.11	+	[9]
+L	B10.0	+	B10.1	+	[10]
+L	B10.0	+	B11.1	+	[11]
+L	B10.1	+	B10.2	+	[10]
+L	B10.2	+	B7.8	+	[10]
+L	B10.9	+	B10.10	+	[10]
+L	B10.10	+	sink	+	[10, 11]
+L	B11.1	+	B7.8	+	[11]
+L	B11.9	+	B10.10	+	[11]

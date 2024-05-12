@@ -5,6 +5,7 @@ from Bio import SeqIO
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+import copy
 
 #----------------------------------------------------------------------------------------
 # Block class
@@ -19,16 +20,16 @@ class block:
         self.begin_column = begin_column
         self.end_column = end_column
 #----------------------------------------------------------------------------------------
-# Functions
+# Utility functions
 
-# read msa file
+# Read msa file
 def read_fasta(filename):
     sequences = {}
     for record in SeqIO.parse(filename, "fasta"):
         sequences[record.id] = list(str(record.seq))  # Convert sequence to a list of characters
     return sequences
      
-# put the sequences in a matrix
+# Put the sequences in a matrix
 def sequences_to_matrix(sequences):
     max_length = max(len(seq) for seq in sequences.values())
     matrix = []
@@ -37,7 +38,7 @@ def sequences_to_matrix(sequences):
         matrix.append(padded_sequence)
     return matrix
 
-# convert each base in a block
+# Convert each base in a block
 def build_blocks_from_sequence_matrix(sequence_matrix):
     block_matrix = [row[:] for row in sequence_matrix]
     num_seq = len(sequence_matrix)
@@ -53,7 +54,7 @@ def build_blocks_from_sequence_matrix(sequence_matrix):
             )
     return block_matrix
 
-# build pangenome graph from block matrix
+# Build pangenome graph from block matrix
 def build_graph(matrix):
     G = nx.DiGraph()
     rows = len(matrix)
@@ -101,7 +102,7 @@ def graph_to_gfa(graph, filename):
             edge_label = data.get('label', '*')  # Get the edge label, or use '*' if not present
             f.write(f"L\t{u}\t+\t{v}\t+\t{edge_label}\n")  # L-line for each edge with label
 
-#Merge two block in one
+# Merge two block in one
 def merge_two_blocks(block_1, block_2, how):
     if how == "column_union":
         new_bases = block_1.base + block_2.base 
@@ -112,7 +113,7 @@ def merge_two_blocks(block_1, block_2, how):
             block_1.begin_column,
             block_2.end_column
         )
-        print("Merged block", block_1.id, "with block", block_2.id, "by columns")
+        #print("Merged block", block_1.id, "with block", block_2.id, "by columns")
     if how == "row_union":
         new_sequences_ids = block_1.sequences_ids + block_2.sequences_ids
         new_block = block(
@@ -122,10 +123,11 @@ def merge_two_blocks(block_1, block_2, how):
             block_1.begin_column,
             block_1.end_column
         )
-        print("Merged block", block_1.id, "with block", block_2.id, "by rows")
+        #print("Merged block", block_1.id, "with block", block_2.id, "by rows")
     return new_block
 
-#Update blocks data
+
+# Update blocks data
 def update_blocks_with_same_id(block_matrix, new_block, id1, id2):
     rows = len(block_matrix)
     cols = len(block_matrix[0])
@@ -145,7 +147,7 @@ def generate_random_numbers(seed, start, end, count):
     random.seed(seed)
     return [random.randint(start, end) for _ in range(count)]
 
-
+#----------------------------------------------------------------------------------------
 # Euristichs
 def local_search(block_matrix):
     rows = len(block_matrix)
@@ -168,7 +170,7 @@ def local_search(block_matrix):
 
 def local_search_random(block_matrix):
     
-    # Ask the user for a seed
+    # Ask user input
     seed = int(input("Insert the seed for the random number: "))
 
     rows = len(block_matrix)
@@ -186,6 +188,7 @@ def local_search_random(block_matrix):
         # Check if the block is visited, if not then visit and try to merge
         if boolean_matrix[row_index][col_index] == False :
             boolean_matrix[row_index][col_index] = True
+           
             # Check up block
             if row_index-1 >= 0:
                 if block_matrix[row_index][col_index].id != block_matrix[row_index-1][col_index].id:
@@ -194,6 +197,7 @@ def local_search_random(block_matrix):
                             block_matrix[row_index][col_index].base == block_matrix[row_index-1][col_index].base):
                         new_block = merge_two_blocks(block_matrix[row_index-1][col_index], block_matrix[row_index][col_index], "row_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index-1][col_index].id)
+            
             # Check down block       
             if row_index+1 < rows:
                 if block_matrix[row_index][col_index].id != block_matrix[row_index+1][col_index].id:
@@ -202,28 +206,89 @@ def local_search_random(block_matrix):
                             block_matrix[row_index][col_index].base == block_matrix[row_index+1][col_index].base):
                         new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index+1][col_index], "row_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index+1][col_index].id)
+            
             # Check left block
             if col_index-1 >= 0:
                 if block_matrix[row_index][col_index].id != block_matrix[row_index][col_index-1].id:
                     if block_matrix[row_index][col_index].sequences_ids == block_matrix[row_index][col_index-1].sequences_ids:
                         new_block = merge_two_blocks(block_matrix[row_index][col_index-1], block_matrix[row_index][col_index], "column_union")
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index][col_index-1].id)
+            
             # Check right block
             if col_index+1 < cols:
                 if block_matrix[row_index][col_index].id != block_matrix[row_index][col_index+1].id:
                     if block_matrix[row_index][col_index].sequences_ids == block_matrix[row_index][col_index+1].sequences_ids:
-                        new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index][col_index+1], "column_union")
+                        new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_index][col_index+1], "column_union")   
                         block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_index][col_index+1].id)
 
     return block_matrix, "lsr", str(seed)
 
+def local_search_random_2(block_matrix):
+     # Ask user input
+    seed = int(input("Insert the seed for the random number: "))
 
+    rows = len(block_matrix)
+    cols = len(block_matrix[0])
+    cell_total = rows * cols
+    # Generate a random numbers using the user-provided seed
+    random_numbers = generate_random_numbers(seed, 1, cell_total, cell_total*2)
+    
+    for x in random_numbers:
+        # Transform the number in matrix indeces 
+        row_index = (x - 1) // cols
+        col_index = (x - 1) % cols
+        list_mergeable = []
+        # Check left block
+        if col_index-1 >= 0:
+            if block_matrix[row_index][col_index].id != block_matrix[row_index][col_index-1].id:
+                if block_matrix[row_index][col_index].sequences_ids == block_matrix[row_index][col_index-1].sequences_ids:
+                    list_mergeable += [[row_index, col_index-1]] 
+        # Check right block
+        if col_index+1 < cols:
+            if block_matrix[row_index][col_index].id != block_matrix[row_index][col_index+1].id:
+                if block_matrix[row_index][col_index].sequences_ids == block_matrix[row_index][col_index+1].sequences_ids:
+                    list_mergeable += [[row_index, col_index+1]] 
+        # Check the column
+        for row in range(rows):
+            if block_matrix[row_index][col_index].id != block_matrix[row][col_index].id:
+                if (block_matrix[row_index][col_index].begin_column == block_matrix[row][col_index].begin_column and
+                    block_matrix[row_index][col_index].end_column == block_matrix[row][col_index].end_column and
+                    block_matrix[row_index][col_index].base == block_matrix[row][col_index].base):
+                    list_mergeable += [[row, col_index]] 
+
+        # Select a random mergeable block
+        if list_mergeable != []:
+            random.seed(seed)
+            n_rand = random.randint(0, len(list_mergeable)-1)
+            row_to_merge = list_mergeable[n_rand][0]
+            column_to_merge = list_mergeable[n_rand][1]
+            if row_to_merge == row_index:
+                how = "column_union"
+            else:
+                how = "row_union"
+            new_block = merge_two_blocks(block_matrix[row_index][col_index], block_matrix[row_to_merge][column_to_merge], how)
+            block_matrix = update_blocks_with_same_id(block_matrix, new_block, block_matrix[row_index][col_index].id, block_matrix[row_to_merge][column_to_merge].id)         
+
+    return block_matrix, "lsr2", str(seed)
+            
+
+
+
+
+#----------------------------------------------------------------------------------------
+# Objective functions
+
+def of_min_label_lenght_threshold(threshold, penalization, label_length):
+    if label_length < threshold :
+        return penalization * (threshold - label_length)
+    else :
+        return 0
 
 #----------------------------------------------------------------------------------------
 # Main
 
 # Read msa from file
-filename = "test4"  # Change this to your .fa file
+filename = "test7"  # Change this to your .fa file
 sequences = read_fasta("Test_allignments/"+filename+".fa")
 
 # Convert sequences to matrix
@@ -233,23 +298,47 @@ sequence_matrix = sequences_to_matrix(sequences)
 block_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
 
 # Euristich
-block_matrix, euristich, seed = local_search_random(block_matrix)
+block_matrix_ls, euristich = local_search(copy.deepcopy(block_matrix))
+block_matrix_lsr, euristich, seed = local_search_random(copy.deepcopy(block_matrix))
+block_matrix_lsr2, euristich, seed = local_search_random_2(copy.deepcopy(block_matrix))
 
 # Create the pangenome graph using the blocks
 # Each block is a node
-graph, pos = build_graph(block_matrix)
+graph_ls, pos = build_graph(block_matrix_ls)
+graph_lsr, pos = build_graph(block_matrix_lsr)
+graph_lsr2, pos = build_graph(block_matrix_lsr2)
 
+threshold = int(input("Insert the threshold: "))
+penalization = int(input("Insert the penalization: "))
+objective_value = 0
+for node in graph_ls.nodes():
+    label = graph_ls.nodes[node]['label']
+    objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
+print("Objective value ls:", objective_value)
+objective_value = 0
+for node in graph_lsr.nodes():
+    label = graph_lsr.nodes[node]['label']
+    objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
+print("Objective value lsr:", objective_value)
+objective_value = 0
+for node in graph_lsr2.nodes():
+    label = graph_lsr2.nodes[node]['label']
+    objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
+print("Objective value lsr2:", objective_value)
+
+
+'''
 # Draw the graph 
 nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
 nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
 
 # Save the image to a file
-plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_'+seed+'.png')
+plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed:'+seed+'_value:'+str(objective_value)+'.png')
 
 # Show the graph
 plt.show()
 
-#Save graph
-file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_'+seed+'.gfa'
+# Save graph
+file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_seed:'+seed+'_value:'+str(objective_value)+'.gfa'
 graph_to_gfa(graph, file_path)
-
+'''
