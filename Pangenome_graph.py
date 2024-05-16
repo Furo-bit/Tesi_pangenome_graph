@@ -113,7 +113,6 @@ def merge_two_blocks(block_1, block_2, how):
             block_1.begin_column,
             block_2.end_column
         )
-        #print("Merged block", block_1.id, "with block", block_2.id, "by columns")
     if how == "row_union":
         new_sequences_ids = block_1.sequences_ids + block_2.sequences_ids
         new_block = block(
@@ -123,7 +122,6 @@ def merge_two_blocks(block_1, block_2, how):
             block_1.begin_column,
             block_1.end_column
         )
-        #print("Merged block", block_1.id, "with block", block_2.id, "by rows")
     return new_block
 
 
