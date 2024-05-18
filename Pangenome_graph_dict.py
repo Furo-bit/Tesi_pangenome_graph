@@ -81,7 +81,7 @@ def merge_two_blocks(block_1, block_2, how):
             "begin_column": block_1["begin_column"],
             "end_column": block_1["end_column"]
         }
-        print(block_1["id"], "with", block_2["id"], "by columns, new sequences:", new_sequence_ids)
+        print(block_1["id"], "with", block_2["id"], "by rows, new sequences:", new_sequence_ids)
     return new_block
 
 
@@ -102,6 +102,11 @@ def update_block_matrix_with_same_id(block_id_matrix, new_id, id1, id2):
                 block_id_matrix[i, j] = new_id
  
     return block_id_matrix
+
+# Generate count numbers from seed
+def generate_random_numbers(seed, start, end, count):
+    random.seed(seed)
+    return [random.randint(start, end) for _ in range(count)]
 
 '''
 # From dictionary to graph
@@ -157,10 +162,7 @@ def local_search(block_dict, block_id_matrix):
                     block_1["label"] == block_2["label"]):
                     new_block = merge_two_blocks(block_1, block_2, "row_union")
                     block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
-                    # Devo aggiornare tutta la matrice di id, non solo le due posizioni mergiate
                     block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_1["id"], block_2["id"])
-                    #block_id_matrix[i, j] = new_block["id"]
-                    #block_id_matrix[i+1, j] = new_block["id"]
                     del block_dict[block_2["id"]]
                     
             # Try to merge two blocks by columns
@@ -171,20 +173,77 @@ def local_search(block_dict, block_id_matrix):
                     new_block = merge_two_blocks(block_1, block_2, "column_union")
                     block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
                     block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_1["id"], block_2["id"])
-                    #block_id_matrix[i, j] = new_block["id"]
-                    #block_id_matrix[i, j+1] = new_block["id"]
                     del block_dict[block_2["id"]]
 
     return block_dict, block_id_matrix, "ls"
 
 
+def local_search_random_2(block_dict, block_id_matrix):
+     # Ask user input
+    seed = int(input("Insert the seed for the random number: "))
+
+    rows = len(block_id_matrix)
+    cols = len(block_id_matrix[0])
+    cell_total = rows * cols
+    # Generate a random numbers using the user-provided seed
+    random_numbers = generate_random_numbers(seed, 1, cell_total, cell_total*2)
+    
+    for x in random_numbers:
+        # Transform the number in matrix indeces 
+        row_index = (x - 1) // cols
+        col_index = (x - 1) % cols
+        list_mergeable = []
+        block_1 = block_dict[block_id_matrix[row_index, col_index]]
+
+        # Check left block
+        if col_index-1 >= 0:
+            block_2 = block_dict[block_id_matrix[row_index, col_index-1]] 
+            if block_1["id"] != block_2["id"]:
+                if block_1["sequence_ids"] == block_2["sequence_ids"]:
+                    list_mergeable += [[row_index, col_index-1]] 
+
+        # Check right block
+        if col_index+1 < cols:
+            block_2 = block_dict[block_id_matrix[row_index, col_index+1]] 
+            if block_1["id"] != block_2["id"]:
+                if block_1["sequence_ids"] == block_2["sequence_ids"]:
+                    list_mergeable += [[row_index, col_index+1]] 
+
+        # Check the column
+        for row in range(rows):
+            block_2 = block_dict[block_id_matrix[row, col_index]] 
+            if block_1["id"] != block_2["id"]:
+                if (block_1["begin_column"] == block_2["begin_column"] and
+                    block_1["end_column"] == block_2["end_column"] and
+                    block_1["label"] == block_2["label"]):
+                    list_mergeable += [[row, col_index]] 
+
+        # Select a random mergeable block
+        if list_mergeable != []:
+            random.seed(seed)
+            n_rand = random.randint(0, len(list_mergeable)-1)
+            row_to_merge = list_mergeable[n_rand][0]
+            column_to_merge = list_mergeable[n_rand][1]
+            if row_to_merge == row_index:
+                how = "column_union"
+            else:
+                how = "row_union"
+            # Update 
+            block_2 = block_dict[block_id_matrix[row_to_merge][column_to_merge]]
+            new_block = merge_two_blocks(block_1, block_2, how)
+            block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
+            block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_1["id"], block_2["id"])
+            del block_dict[block_2["id"]]
+            
+    return block_dict, block_id_matrix, "lsr2", str(seed)
+ 
 
 
 #----------------------------------------------------------------------------------------
 
 def main():
     # Reading the MSA
-    filename = "test"  # Change this to your .fa file
+    filename = "test7"  # Change this to your .fa file
     sequences = read_fasta("Test_allignments/"+filename+".fa")
 
     # Convert sequences to matrix
@@ -194,7 +253,7 @@ def main():
     block_dict, block_id_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
     
     # Euristich
-    block_dict, block_id_matrix, euristich = local_search(block_dict, block_id_matrix)
+    block_dict, block_id_matrix, euristich, seed = local_search_random_2(block_dict, block_id_matrix)
     print(block_dict, block_id_matrix)
 
 
