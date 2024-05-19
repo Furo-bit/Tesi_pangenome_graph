@@ -71,7 +71,7 @@ def merge_two_blocks(block_1, block_2, how):
             "begin_column": block_1["begin_column"],
             "end_column": block_2["end_column"]
         }
-        print(block_1["id"], "with", block_2["id"], "by columns, new label:", new_labels)
+        #print(block_1["id"], "with", block_2["id"], "by columns, new label:", new_labels)
     elif how == "row_union":
         new_sequence_ids = block_1["sequence_ids"] + block_2["sequence_ids"]
         new_block = {
@@ -81,7 +81,7 @@ def merge_two_blocks(block_1, block_2, how):
             "begin_column": block_1["begin_column"],
             "end_column": block_1["end_column"]
         }
-        print(block_1["id"], "with", block_2["id"], "by rows, new sequences:", new_sequence_ids)
+        #print(block_1["id"], "with", block_2["id"], "by rows, new sequences:", new_sequence_ids)
     return new_block
 
 
@@ -103,24 +103,32 @@ def update_block_matrix_with_same_id(block_id_matrix, new_id, id1, id2):
  
     return block_id_matrix
 
+def graph_to_gfa(graph, filename):
+    with open(filename, 'w') as f:
+        f.write("H\tVN:Z:1.0\n")  # GFA header line
+        for node, data in graph.nodes(data=True):
+            f.write(f"S\t{node}\t*\tLN:i:{data['label']}\n")  # S-line for each node
+        for u, v, data in graph.edges(data=True):
+            edge_label = data.get('label', '*')  # Get the edge label, or use '*' if not present
+            f.write(f"L\t{u}\t+\t{v}\t+\t{edge_label}\n")  # L-line for each edge with label
+
 # Generate count numbers from seed
 def generate_random_numbers(seed, start, end, count):
     random.seed(seed)
     return [random.randint(start, end) for _ in range(count)]
 
-'''
-# From dictionary to graph
 def build_graph(block_dict, block_id_matrix):
     G = nx.DiGraph()
-    rows = len(block_id_matrix)
-    cols = len(block_id_matrix[0])
+    rows, cols = block_id_matrix.shape
 
     # Add nodes
-    G.add_node("source", label = "source")
-    G.add_node("sink", label = "sink")
+    G.add_node("source", label="source")
+    G.add_node("sink", label="sink")
     for i in range(rows):
         for j in range(cols):
-            G.add_node(block_id_matrix[i][j].id, label=matrix[i][j].base, row=i, col=j)
+            block_id = block_id_matrix[i, j]
+            block = block_dict[block_id]
+            G.add_node(block_id, label=block["label"], row=i, col=j)
             
     # Calculate positions for nodes based on "row" and "col" attributes
     pos = {}
@@ -131,21 +139,21 @@ def build_graph(block_dict, block_id_matrix):
             pos[node] = (cols + 1, 0)
         else:
             pos[node] = (data['col'], -data['row'])  # Invert row value for upward display
-       
+
     # Add edges
     for i in range(rows):
-        G.add_edge("source", matrix[i][0].id, label = matrix[i][0].sequences_ids)
-        G.add_edge(matrix[i][cols-1].id, "sink", label = matrix[i][cols-1].sequences_ids)
-        for j in range(cols):
-            # Connect horizontally adjacent nodes
-            if j < cols - 1 and matrix[i][j].id != matrix[i][j+1].id:
-                G.add_edge(matrix[i][j].id,
-                            matrix[i][j+1].id,
-                             label = list(set(matrix[i][j].sequences_ids).intersection(set(matrix[i][j+1].sequences_ids))) 
-                        )
-    
+        G.add_edge("source", block_id_matrix[i, 0], label=block_dict[block_id_matrix[i, 0]]["sequence_ids"])
+        G.add_edge(block_id_matrix[i, cols-1], "sink", label=block_dict[block_id_matrix[i, cols-1]]["sequence_ids"])
+        for j in range(cols - 1):
+            current_block_id = block_id_matrix[i, j]
+            next_block_id = block_id_matrix[i, j+1]
+            if current_block_id != next_block_id:
+                current_block = block_dict[current_block_id]
+                next_block = block_dict[next_block_id]
+                common_sequences = list(set(current_block["sequence_ids"]).intersection(set(next_block["sequence_ids"])))
+                G.add_edge(current_block_id, next_block_id, label=common_sequences)
+
     return G, pos
-'''
 #----------------------------------------------------------------------------------------
 # Euristichs
 def local_search(block_dict, block_id_matrix):
@@ -228,12 +236,18 @@ def local_search_random_2(block_dict, block_id_matrix):
                 how = "column_union"
             else:
                 how = "row_union"
-            # Update 
             block_2 = block_dict[block_id_matrix[row_to_merge][column_to_merge]]
-            new_block = merge_two_blocks(block_1, block_2, how)
-            block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
-            block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_1["id"], block_2["id"])
-            del block_dict[block_2["id"]]
+            # Update 
+            if row_to_merge < row_index or column_to_merge < col_index:
+                new_block = merge_two_blocks(block_2, block_1, how)
+                block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
+                block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_2["id"], block_1["id"])
+                del block_dict[block_1["id"]]
+            else: 
+                new_block = merge_two_blocks(block_1, block_2, how)
+                block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
+                block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_1["id"], block_2["id"])
+                del block_dict[block_2["id"]]
             
     return block_dict, block_id_matrix, "lsr2", str(seed)
  
@@ -243,7 +257,7 @@ def local_search_random_2(block_dict, block_id_matrix):
 
 def main():
     # Reading the MSA
-    filename = "test7"  # Change this to your .fa file
+    filename = "test3"  # Change this to your .fa file
     sequences = read_fasta("Test_allignments/"+filename+".fa")
 
     # Convert sequences to matrix
@@ -254,7 +268,24 @@ def main():
     
     # Euristich
     block_dict, block_id_matrix, euristich, seed = local_search_random_2(block_dict, block_id_matrix)
-    print(block_dict, block_id_matrix)
+    #print(block_dict, block_id_matrix)
+
+    #Graph
+    graph, pos = build_graph(block_dict, block_id_matrix)
+
+    # Draw the graph 
+    nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
+    nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
+
+    # Save the image to a file
+    plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed_'+seed+'.png')
+
+    # Show the graph
+    plt.show()
+
+    # Save graph
+    file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_seed_'+seed+'.gfa'
+    graph_to_gfa(graph, file_path)
 
 
 if __name__ == "__main__":
