@@ -103,6 +103,12 @@ def update_block_matrix_with_same_id(block_id_matrix, new_id, id1, id2):
  
     return block_id_matrix
 
+def update_block_submatrix_with_same_id(block_id_matrix, new_id, sequences, first_column, last_column):
+    for sequence in sequences:
+        for column in range(first_column, last_column + 1):
+            block_id_matrix[sequence, column] = new_id
+
+
 def graph_to_gfa(graph, filename):
     with open(filename, 'w') as f:
         f.write("H\tVN:Z:1.0\n")  # GFA header line
@@ -237,24 +243,33 @@ def local_search_random_2(block_dict, block_id_matrix):
             else:
                 how = "row_union"
             block_2 = block_dict[block_id_matrix[row_to_merge][column_to_merge]]
-            # Update 
+            # Update
             if row_to_merge < row_index or column_to_merge < col_index:
                 new_block = merge_two_blocks(block_2, block_1, how)
                 block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
-                block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_2["id"], block_1["id"])
                 del block_dict[block_1["id"]]
             else: 
                 new_block = merge_two_blocks(block_1, block_2, how)
                 block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
-                block_id_matrix = update_block_matrix_with_same_id(block_id_matrix, new_block["id"], block_1["id"], block_2["id"])
                 del block_dict[block_2["id"]]
+            for sequence in new_block["sequence_ids"]:
+                for column in range(new_block["begin_column"], new_block["end_column"] + 1):
+                    block_id_matrix[sequence, column] = new_block["id"]
             
     return block_dict, block_id_matrix, "lsr2", str(seed)
  
 
 
 #----------------------------------------------------------------------------------------
+# Objective functions
 
+def of_min_label_lenght_threshold(threshold, penalization, label_length):
+    if label_length < threshold :
+        return penalization * (threshold - label_length)
+    else :
+        return 0
+
+#----------------------------------------------------------------------------------------
 def main():
     # Reading the MSA
     filename = "test3"  # Change this to your .fa file
@@ -272,6 +287,16 @@ def main():
 
     #Graph
     graph, pos = build_graph(block_dict, block_id_matrix)
+
+    
+    # Objective function
+    threshold = int(input("Insert the threshold: "))
+    penalization = int(input("Insert the penalization: "))
+    objective_value = 0
+    for node in graph.nodes():
+        label = graph.nodes[node]['label']
+        objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
+    print("Objective value lsr2:", objective_value)
 
     # Draw the graph 
     nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
