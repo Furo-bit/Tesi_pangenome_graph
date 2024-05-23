@@ -84,6 +84,63 @@ def merge_two_blocks(block_1, block_2, how):
         #print(block_1["id"], "with", block_2["id"], "by rows, new sequences:", new_sequence_ids)
     return new_block
 
+# Split one block in two by column
+def split_block_by_column(block):
+    label = block["label"]
+    begin_column = block["begin_column"]
+    end_column = block["end_column"]
+    
+    if end_column - begin_column <= 0:
+        raise ValueError("Block must span at least two columns to be split.")
+    
+    # Choose a random split point ensuring both parts are non-empty
+    split_point = random.randint(begin_column + 1, end_column)
+    
+    part1 = {
+        "id": block["id"] + "_1",
+        "label": label[:split_point - begin_column],
+        "sequence_ids": block["sequence_ids"],
+        "begin_column": begin_column,
+        "end_column": split_point - 1
+    }
+    
+    part2 = {
+        "id": block["id"] + "_2",
+        "label": label[split_point - begin_column:],
+        "sequence_ids": block["sequence_ids"],
+        "begin_column": split_point,
+        "end_column": end_column
+    }
+    
+    return part1, part2
+
+# Split one block in two by row
+def split_block_by_row(block):
+    sequence_ids = block["sequence_ids"]
+    
+    if len(sequence_ids) <= 1:
+        raise ValueError("Block must contain at least two sequence IDs to be split.")
+    
+    # Choose a random split point ensuring both parts are non-empty
+    split_point = random.randint(1, len(sequence_ids) - 1)
+    
+    part1 = {
+        "id": block["id"] + "_1",
+        "label": block["label"],
+        "sequence_ids": sequence_ids[:split_point],
+        "begin_column": block["begin_column"],
+        "end_column": block["end_column"]
+    }
+    
+    part2 = {
+        "id": block["id"] + "_2",
+        "label": block["label"],
+        "sequence_ids": sequence_ids[split_point:],
+        "begin_column": block["begin_column"],
+        "end_column": block["end_column"]
+    }
+    
+    return part1, part2
 
 # Update block dict data
 def update_block_dict_with_same_id(block_dict, new_block, id1, id2):
@@ -108,7 +165,7 @@ def update_block_submatrix_with_same_id(block_id_matrix, new_id, sequences, firs
         for column in range(first_column, last_column + 1):
             block_id_matrix[sequence, column] = new_id
 
-
+# From graph to gfa file
 def graph_to_gfa(graph, filename):
     with open(filename, 'w') as f:
         f.write("H\tVN:Z:1.0\n")  # GFA header line
@@ -231,30 +288,63 @@ def local_search_random_2(block_dict, block_id_matrix):
                     block_1["end_column"] == block_2["end_column"] and
                     block_1["label"] == block_2["label"]):
                     list_mergeable += [[row, col_index]] 
+        
+        # Check column split
+        if block_1["end_column"] - block_1["begin_column"] > 0:
+            list_mergeable += [["column_split"]]
+        
+        # Check row split
+        if len(block_1["sequence_ids"]) > 1:
+            list_mergeable += [["row_split"]]
 
         # Select a random mergeable block
         if list_mergeable != []:
             random.seed(seed)
             n_rand = random.randint(0, len(list_mergeable)-1)
-            row_to_merge = list_mergeable[n_rand][0]
-            column_to_merge = list_mergeable[n_rand][1]
-            if row_to_merge == row_index:
-                how = "column_union"
-            else:
-                how = "row_union"
-            block_2 = block_dict[block_id_matrix[row_to_merge][column_to_merge]]
-            # Update
-            if row_to_merge < row_index or column_to_merge < col_index:
-                new_block = merge_two_blocks(block_2, block_1, how)
-                block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
+
+            if list_mergeable[n_rand][0] == "column_split" or list_mergeable[n_rand][0] == "row_split":
+                
+                if list_mergeable[n_rand][0] == "column_split":                        
+                    # column split
+                    new_block_1, new_block_2 = split_block_by_column(block_1)
+                
+                elif list_mergeable[n_rand][0] == "row_split":
+                    # row split
+                    new_block_1, new_block_2 = split_block_by_row(block_1)
+                
+                # update new_block_1
+                for sequence in new_block_1["sequence_ids"]:
+                    for column in range(new_block_1["begin_column"], new_block_1["end_column"] + 1):
+                        block_id_matrix[sequence, column] = new_block_1["id"]
+                # update new_block_2
+                for sequence in new_block_2["sequence_ids"]:
+                    for column in range(new_block_2["begin_column"], new_block_2["end_column"] + 1):
+                        block_id_matrix[sequence, column] = new_block_2["id"]
+                # update dict data
                 del block_dict[block_1["id"]]
-            else: 
-                new_block = merge_two_blocks(block_1, block_2, how)
-                block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
-                del block_dict[block_2["id"]]
-            for sequence in new_block["sequence_ids"]:
-                for column in range(new_block["begin_column"], new_block["end_column"] + 1):
-                    block_id_matrix[sequence, column] = new_block["id"]
+                block_dict[new_block_1["id"]] = new_block_1
+                block_dict[new_block_2["id"]] = new_block_2
+                               
+            else:
+                row_to_merge = list_mergeable[n_rand][0]
+                column_to_merge = list_mergeable[n_rand][1]
+                if row_to_merge == row_index:
+                    how = "column_union"
+                else:
+                    how = "row_union"
+                block_2 = block_dict[block_id_matrix[row_to_merge][column_to_merge]]
+                # Update
+                if row_to_merge < row_index or column_to_merge < col_index:
+                    new_block = merge_two_blocks(block_2, block_1, how)
+                    block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
+                    del block_dict[block_1["id"]]
+                else: 
+                    new_block = merge_two_blocks(block_1, block_2, how)
+                    block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
+                    del block_dict[block_2["id"]]
+                for sequence in new_block["sequence_ids"]:
+                    for column in range(new_block["begin_column"], new_block["end_column"] + 1):
+                        block_id_matrix[sequence, column] = new_block["id"]
             
     return block_dict, block_id_matrix, "lsr2", str(seed)
  
@@ -272,8 +362,8 @@ def of_min_label_lenght_threshold(threshold, penalization, label_length):
 #----------------------------------------------------------------------------------------
 def main():
     # Reading the MSA
-    filename = "test3"  # Change this to your .fa file
-    sequences = read_fasta("Test_allignments/"+filename+".fa")
+    filename = "msas/mafft.op5-ep2/10-sars-cov-2-ena"  # Change this to your .fa file
+    sequences = read_fasta(filename+".fa")
 
     # Convert sequences to matrix
     sequence_matrix = sequences_to_matrix(sequences) 
@@ -299,14 +389,14 @@ def main():
     print("Objective value lsr2:", objective_value)
 
     # Draw the graph 
-    nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
-    nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
+    #nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
+    #nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
 
     # Save the image to a file
-    plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed_'+seed+'.png')
+    #plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed_'+seed+'.png')
 
     # Show the graph
-    plt.show()
+    #plt.show()
 
     # Save graph
     file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_seed_'+seed+'.gfa'
