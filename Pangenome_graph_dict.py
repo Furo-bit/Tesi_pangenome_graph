@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import random
 import copy
 import numpy as np
+import math
 
 #----------------------------------------------------------------------------------------
 # Block
@@ -180,6 +181,12 @@ def generate_random_numbers(seed, start, end, count):
     random.seed(seed)
     return [random.randint(start, end) for _ in range(count)]
 
+# Generate count number from seed
+def generate_random_number(seed, start, end):
+    random.seed(seed)
+    return random.randint(start, end)
+
+
 def build_graph(block_dict, block_id_matrix):
     G = nx.DiGraph()
     rows, cols = block_id_matrix.shape
@@ -217,6 +224,19 @@ def build_graph(block_dict, block_id_matrix):
                 G.add_edge(current_block_id, next_block_id, label=common_sequences)
 
     return G, pos
+
+def acceptance_probability(delta, temperature):
+
+    boltzmann_constant = 1.380649e-23  # Costante di Boltzmann (in J/K)
+    """
+    Calcola la probabilità di accettazione di una soluzione con un delta di energia delta_E,
+    una temperatura T e una costante di Boltzmann k.
+    :param delta: Differenza di energia tra la soluzione proposta e la soluzione corrente
+    :param temperature: Temperatura attuale
+    :return: Probabilità di accettazione
+    """
+    return math.exp(-delta / (boltzmann_constant * temperature))
+
 #----------------------------------------------------------------------------------------
 # Euristichs
 def local_search(block_dict, block_id_matrix):
@@ -348,6 +368,133 @@ def local_search_random_2(block_dict, block_id_matrix):
             
     return block_dict, block_id_matrix, "lsr2", str(seed)
  
+def simulated_annealing(block_dict, block_id_matrix):
+    # Ask user inputs
+    seed = int(input("Insert the seed for the random number: "))
+    random.seed(seed)
+    temperature = int(input("Insert the temperature: "))
+    termination_temperature = int(input("Insert the termination temperature: "))
+    cooling_factor = float(input("Insert the cooling factor (between 0 and 1):"))
+    threshold = int(input("Insert the threshold: "))
+    penalization = int(input("Insert the penalization: "))
+
+
+    rows = len(block_id_matrix)
+    cols = len(block_id_matrix[0])
+    cell_total = rows * cols
+
+    while True:
+        random_number = random.randint(1, cell_total)
+        row_index = (random_number - 1) // cols
+        col_index = (random_number - 1) % cols
+        list_possible_moves = []
+        block_1 = block_dict[block_id_matrix[row_index, col_index]]
+
+        # Check left block
+        if col_index-1 >= 0:
+            block_2 = block_dict[block_id_matrix[row_index, col_index-1]] 
+            if block_1["id"] != block_2["id"]:
+                if block_1["sequence_ids"] == block_2["sequence_ids"]:
+                    list_possible_moves += [[row_index, col_index-1]] 
+
+        # Check right block
+        if col_index+1 < cols:
+            block_2 = block_dict[block_id_matrix[row_index, col_index+1]] 
+            if block_1["id"] != block_2["id"]:
+                if block_1["sequence_ids"] == block_2["sequence_ids"]:
+                    list_possible_moves += [[row_index, col_index+1]] 
+
+        # Check the column
+        for row in range(rows):
+            block_2 = block_dict[block_id_matrix[row, col_index]] 
+            if block_1["id"] != block_2["id"]:
+                if (block_1["begin_column"] == block_2["begin_column"] and
+                    block_1["end_column"] == block_2["end_column"] and
+                    block_1["label"] == block_2["label"]):
+                    list_possible_moves += [[row, col_index]] 
+        
+        # Check column split
+        if block_1["end_column"] - block_1["begin_column"] > 0:
+            list_possible_moves += [["column_split"]]
+        
+        # Check row split
+        if len(block_1["sequence_ids"]) > 1:
+            list_possible_moves += [["row_split"]]
+        
+        if list_possible_moves != []:
+            print(list_possible_moves)
+            n_rand = random.randint(0, len(list_possible_moves)-1)
+
+            if list_possible_moves[n_rand][0] == "column_split" or list_possible_moves[n_rand][0] == "row_split":
+                
+
+                if list_possible_moves[n_rand][0] == "column_split":                        
+                    # column split
+                    new_block_1, new_block_2 = split_block_by_column(block_1)
+
+                elif list_possible_moves[n_rand][0] == "row_split":
+                    # row split
+                    new_block_1, new_block_2 = split_block_by_row(block_1)
+
+                label_b1 = block_1["label"]  
+                label_nb1 = new_block_1["label"]
+                label_nb2 = new_block_2["label"]  
+                
+                label_b1 = label_b1.translate(str.maketrans("", "", "-"))
+                label_nb1 = label_nb1.translate(str.maketrans("", "", "-"))
+                label_nb2 = label_nb2.translate(str.maketrans("", "", "-"))
+
+                delta = (of_min_label_lenght_threshold(threshold, penalization, len(label_nb1)) +
+                        of_min_label_lenght_threshold(threshold, penalization, len(label_nb2)) -
+                        of_min_label_lenght_threshold(threshold, penalization, len(label_b1))
+                        )                  
+
+                probability = acceptance_probability(delta, temperature)
+
+                if random.random() <= probability:
+
+                    # update new_block_1
+                    for sequence in new_block_1["sequence_ids"]:
+                        for column in range(new_block_1["begin_column"], new_block_1["end_column"] + 1):
+                            block_id_matrix[sequence, column] = new_block_1["id"]
+                    # update new_block_2
+                    for sequence in new_block_2["sequence_ids"]:
+                        for column in range(new_block_2["begin_column"], new_block_2["end_column"] + 1):
+                            block_id_matrix[sequence, column] = new_block_2["id"]
+                    # update dict data
+                    del block_dict[block_1["id"]]
+                    block_dict[new_block_1["id"]] = new_block_1
+                    block_dict[new_block_2["id"]] = new_block_2
+                               
+            else:
+                row_to_merge = list_possible_moves[n_rand][0]
+                column_to_merge = list_possible_moves[n_rand][1]
+                if row_to_merge == row_index:
+                    how = "column_union"
+                else:
+                    how = "row_union"
+                block_2 = block_dict[block_id_matrix[row_to_merge][column_to_merge]]
+                # Update
+                if row_to_merge < row_index or column_to_merge < col_index:
+                    new_block = merge_two_blocks(block_2, block_1, how)
+                    block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
+                    del block_dict[block_1["id"]]
+                else: 
+                    new_block = merge_two_blocks(block_1, block_2, how)
+                    block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
+                    del block_dict[block_2["id"]]
+                for sequence in new_block["sequence_ids"]:
+                    for column in range(new_block["begin_column"], new_block["end_column"] + 1):
+                        block_id_matrix[sequence, column] = new_block["id"]
+          
+            # Cooling condition
+            if list_possible_moves[n_rand][0] != "column_split" and list_possible_moves[n_rand][0] != "row_split":
+                temperature = cooling_factor * temperature 
+        print("Temperature:", temperature)
+        if temperature <= termination_temperature:
+            break
+
+    return block_dict, block_id_matrix, "sa", str(seed)
 
 
 #----------------------------------------------------------------------------------------
@@ -362,8 +509,9 @@ def of_min_label_lenght_threshold(threshold, penalization, label_length):
 #----------------------------------------------------------------------------------------
 def main():
     # Reading the MSA
-    filename = "msas/mafft.op5-ep2/10-sars-cov-2-ena"  # Change this to your .fa file
-    sequences = read_fasta(filename+".fa")
+    #filename = "msas/mafft.op5-ep2/10-sars-cov-2-ena"  # Change this to your .fa file
+    filename = "test"
+    sequences = read_fasta("Test_allignments/"+filename+".fa")
 
     # Convert sequences to matrix
     sequence_matrix = sequences_to_matrix(sequences) 
@@ -372,31 +520,32 @@ def main():
     block_dict, block_id_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
     
     # Euristich
-    block_dict, block_id_matrix, euristich, seed = local_search_random_2(block_dict, block_id_matrix)
+    block_dict, block_id_matrix, euristich, seed = simulated_annealing(block_dict, block_id_matrix)
     #print(block_dict, block_id_matrix)
 
     #Graph
     graph, pos = build_graph(block_dict, block_id_matrix)
 
-    
+    '''
     # Objective function
     threshold = int(input("Insert the threshold: "))
     penalization = int(input("Insert the penalization: "))
     objective_value = 0
     for node in graph.nodes():
         label = graph.nodes[node]['label']
+        label = label.translate(str.maketrans("", "", "-"))
         objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
     print("Objective value lsr2:", objective_value)
-
+    '''
     # Draw the graph 
-    #nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
-    #nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
+    nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
+    nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
 
     # Save the image to a file
-    #plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed_'+seed+'.png')
+    plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed_'+seed+'.png')
 
     # Show the graph
-    #plt.show()
+    plt.show()
 
     # Save graph
     file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_seed_'+seed+'.gfa'
