@@ -6,13 +6,13 @@ from Bio import SeqIO
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-import copy
 import numpy as np
 import math
+from typing import List
 
 #----------------------------------------------------------------------------------------
 # Block
-def create_block(id, label, sequence_id, begin_column, end_column):
+def create_block(id: str, label: str, sequence_id: List[str], begin_column: int, end_column: int):
     block_dict = {
         "id": id,
         "label": label,
@@ -25,7 +25,7 @@ def create_block(id, label, sequence_id, begin_column, end_column):
 # Utility functions
 
 # Read msa file
-def read_fasta(filename):
+def read_fasta(filename: str):
     sequences = {}
     for record in SeqIO.parse(filename, "fasta"):
         sequences[record.id] = list(str(record.seq))  # Convert sequence to a list of characters
@@ -62,7 +62,11 @@ def build_blocks_from_sequence_matrix(sequence_matrix):
     return block_dict, block_id_matrix
 
 # Merge two blocks in one
-def merge_two_blocks(block_1, block_2, how):
+def merge_two_blocks(block_1, block_2, how: str):
+    valid_values = {"column_union", "row_union"}
+    if how not in valid_values:
+        raise ValueError(f"Invalid value for param: {how}, the accepted values are column_union and row_union")
+    
     if how == "column_union":
         new_labels = block_1["label"] + block_2["label"]
         new_block = {
@@ -228,13 +232,7 @@ def build_graph(block_dict, block_id_matrix):
 def acceptance_probability(delta, temperature):
 
     boltzmann_constant = 1.380649e-23  # Costante di Boltzmann (in J/K)
-    """
-    Calcola la probabilità di accettazione di una soluzione con un delta di energia delta_E,
-    una temperatura T e una costante di Boltzmann k.
-    :param delta: Differenza di energia tra la soluzione proposta e la soluzione corrente
-    :param temperature: Temperatura attuale
-    :return: Probabilità di accettazione
-    """
+
     return math.exp(-delta / (boltzmann_constant * temperature))
 
 #----------------------------------------------------------------------------------------
@@ -370,13 +368,13 @@ def local_search_random_2(block_dict, block_id_matrix):
  
 def simulated_annealing(block_dict, block_id_matrix):
     # Ask user inputs
-    seed = int(input("Insert the seed for the random number: "))
+    seed = 3 #int(input("Insert the seed for the random number: "))
     random.seed(seed)
-    temperature = int(input("Insert the temperature: "))
-    termination_temperature = int(input("Insert the termination temperature: "))
-    cooling_factor = float(input("Insert the cooling factor (between 0 and 1):"))
-    threshold = int(input("Insert the threshold: "))
-    penalization = int(input("Insert the penalization: "))
+    temperature = 100 #int(input("Insert the temperature: "))
+    termination_temperature = 5 #int(input("Insert the termination temperature: "))
+    cooling_factor = 0.99 #float(input("Insert the cooling factor (between 0 and 1):"))
+    threshold = 3 #int(input("Insert the threshold: "))
+    penalization = 3 #int(input("Insert the penalization: "))
 
 
     rows = len(block_id_matrix)
@@ -422,7 +420,7 @@ def simulated_annealing(block_dict, block_id_matrix):
             list_possible_moves += [["row_split"]]
         
         if list_possible_moves != []:
-            print(list_possible_moves)
+            #print(list_possible_moves)
             n_rand = random.randint(0, len(list_possible_moves)-1)
 
             if list_possible_moves[n_rand][0] == "column_split" or list_possible_moves[n_rand][0] == "row_split":
@@ -444,9 +442,9 @@ def simulated_annealing(block_dict, block_id_matrix):
                 label_nb1 = label_nb1.translate(str.maketrans("", "", "-"))
                 label_nb2 = label_nb2.translate(str.maketrans("", "", "-"))
 
-                delta = (of_min_label_lenght_threshold(threshold, penalization, len(label_nb1)) +
-                        of_min_label_lenght_threshold(threshold, penalization, len(label_nb2)) -
-                        of_min_label_lenght_threshold(threshold, penalization, len(label_b1))
+                delta = (of_min_label_length_threshold(threshold, penalization, len(label_nb1)) +
+                        of_min_label_length_threshold(threshold, penalization, len(label_nb2)) -
+                        of_min_label_length_threshold(threshold, penalization, len(label_b1))
                         )                  
 
                 probability = acceptance_probability(delta, temperature)
@@ -500,7 +498,7 @@ def simulated_annealing(block_dict, block_id_matrix):
 #----------------------------------------------------------------------------------------
 # Objective functions
 
-def of_min_label_lenght_threshold(threshold, penalization, label_length):
+def of_min_label_length_threshold(threshold, penalization, label_length):
     if label_length < threshold :
         return penalization * (threshold - label_length)
     else :
@@ -509,9 +507,10 @@ def of_min_label_lenght_threshold(threshold, penalization, label_length):
 #----------------------------------------------------------------------------------------
 def main():
     # Reading the MSA
-    #filename = "msas/mafft.op5-ep2/10-sars-cov-2-ena"  # Change this to your .fa file
-    filename = "test"
-    sequences = read_fasta("Test_allignments/"+filename+".fa")
+    filename = "msas/mafft.op5-ep2/10-sars-cov-2-ena"  # Change this to your .fa file
+    #filename = "test2"
+    #sequences = read_fasta("Test_allignments/"+filename+".fa")
+    sequences = read_fasta(filename+".fa")
 
     # Convert sequences to matrix
     sequence_matrix = sequences_to_matrix(sequences) 
@@ -522,11 +521,21 @@ def main():
     # Euristich
     block_dict, block_id_matrix, euristich, seed = simulated_annealing(block_dict, block_id_matrix)
     #print(block_dict, block_id_matrix)
+   
+    # Calcola il valore obiettivo
+    objective_value = 0
+    for key in block_dict:
+        label = block_dict[key]['label']
+        label = label.translate(str.maketrans("", "", "-"))  # Rimuove il carattere "-"
+        objective_value += of_min_label_length_threshold(3, 3, len(label))
 
+    print("Objective value lsr2:", objective_value)
+
+    '''
     #Graph
     graph, pos = build_graph(block_dict, block_id_matrix)
 
-    '''
+   
     # Objective function
     threshold = int(input("Insert the threshold: "))
     penalization = int(input("Insert the penalization: "))
@@ -536,7 +545,7 @@ def main():
         label = label.translate(str.maketrans("", "", "-"))
         objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
     print("Objective value lsr2:", objective_value)
-    '''
+
     # Draw the graph 
     nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
     nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
@@ -550,7 +559,7 @@ def main():
     # Save graph
     file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_seed_'+seed+'.gfa'
     graph_to_gfa(graph, file_path)
-
+    '''
 
 if __name__ == "__main__":
     main()
