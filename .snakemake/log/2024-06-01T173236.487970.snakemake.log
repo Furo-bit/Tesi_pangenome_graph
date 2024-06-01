@@ -1,0 +1,129 @@
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job              count
+-------------  -------
+all                  1
+run_alignment        7
+total                8
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:36 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test7.fa
+    output: output/test7.gfa, output/test7_quality.txt
+    jobid: 7
+    reason: Missing output files: output/test7_quality.txt, output/test7.gfa
+    wildcards: alignment=test7
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:38 2024]
+Finished job 7.
+1 of 8 steps (12%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:38 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test4.fa
+    output: output/test4.gfa, output/test4_quality.txt
+    jobid: 4
+    reason: Missing output files: output/test4.gfa, output/test4_quality.txt
+    wildcards: alignment=test4
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:39 2024]
+Finished job 4.
+2 of 8 steps (25%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:39 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test3.fa
+    output: output/test3.gfa, output/test3_quality.txt
+    jobid: 3
+    reason: Missing output files: output/test3.gfa, output/test3_quality.txt
+    wildcards: alignment=test3
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:41 2024]
+Finished job 3.
+3 of 8 steps (38%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:41 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test5.fa
+    output: output/test5.gfa, output/test5_quality.txt
+    jobid: 5
+    reason: Missing output files: output/test5_quality.txt, output/test5.gfa
+    wildcards: alignment=test5
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:42 2024]
+Finished job 5.
+4 of 8 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:42 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test.fa
+    output: output/test.gfa, output/test_quality.txt
+    jobid: 1
+    reason: Missing output files: output/test.gfa, output/test_quality.txt
+    wildcards: alignment=test
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:44 2024]
+Finished job 1.
+5 of 8 steps (62%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:44 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test2.fa
+    output: output/test2.gfa, output/test2_quality.txt
+    jobid: 2
+    reason: Missing output files: output/test2_quality.txt, output/test2.gfa
+    wildcards: alignment=test2
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:45 2024]
+Finished job 2.
+6 of 8 steps (75%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:45 2024]
+localrule run_alignment:
+    input: data/params.txt, data/alignments/test6.fa
+    output: output/test6.gfa, output/test6_quality.txt
+    jobid: 6
+    reason: Missing output files: output/test6_quality.txt, output/test6.gfa
+    wildcards: alignment=test6
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:46 2024]
+Finished job 6.
+7 of 8 steps (88%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Sat Jun  1 17:32:46 2024]
+localrule all:
+    input: output/test.gfa, output/test2.gfa, output/test3.gfa, output/test4.gfa, output/test5.gfa, output/test6.gfa, output/test7.gfa, output/test_quality.txt, output/test2_quality.txt, output/test3_quality.txt, output/test4_quality.txt, output/test5_quality.txt, output/test6_quality.txt, output/test7_quality.txt
+    jobid: 0
+    reason: Input files updated by another job: output/test5_quality.txt, output/test3.gfa, output/test3_quality.txt, output/test5.gfa, output/test7.gfa, output/test_quality.txt, output/test7_quality.txt, output/test4.gfa, output/test2_quality.txt, output/test2.gfa, output/test.gfa, output/test4_quality.txt, output/test6_quality.txt, output/test6.gfa
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Sat Jun  1 17:32:46 2024]
+Finished job 0.
+8 of 8 steps (100%) done
+Complete log: .snakemake\log\2024-06-01T173236.487970.snakemake.log

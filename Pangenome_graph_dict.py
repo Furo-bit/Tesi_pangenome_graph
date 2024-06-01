@@ -9,6 +9,9 @@ import random
 import numpy as np
 import math
 from typing import List
+import argparse
+import configparser
+
 
 #----------------------------------------------------------------------------------------
 # Block
@@ -203,7 +206,7 @@ def build_graph(block_dict, block_id_matrix):
             block_id = block_id_matrix[i, j]
             block = block_dict[block_id]
             G.add_node(block_id, label=block["label"], row=i, col=j)
-            
+    '''        
     # Calculate positions for nodes based on "row" and "col" attributes
     pos = {}
     for node, data in G.nodes(data=True):
@@ -213,7 +216,7 @@ def build_graph(block_dict, block_id_matrix):
             pos[node] = (cols + 1, 0)
         else:
             pos[node] = (data['col'], -data['row'])  # Invert row value for upward display
-
+    '''
     # Add edges
     for i in range(rows):
         G.add_edge("source", block_id_matrix[i, 0], label=block_dict[block_id_matrix[i, 0]]["sequence_ids"])
@@ -227,11 +230,11 @@ def build_graph(block_dict, block_id_matrix):
                 common_sequences = list(set(current_block["sequence_ids"]).intersection(set(next_block["sequence_ids"])))
                 G.add_edge(current_block_id, next_block_id, label=common_sequences)
 
-    return G, pos
+    return G #, pos
 
 def acceptance_probability(delta, temperature):
 
-    boltzmann_constant = 1.380649e-23  # Costante di Boltzmann (in J/K)
+    boltzmann_constant = 1.380649e-23  # Boltzmann constant (J/K)
 
     return math.exp(-delta / (boltzmann_constant * temperature))
 
@@ -267,9 +270,9 @@ def local_search(block_dict, block_id_matrix):
     return block_dict, block_id_matrix, "ls"
 
 
-def local_search_random_2(block_dict, block_id_matrix):
+def local_search_random(block_dict, block_id_matrix, params):
      # Ask user input
-    seed = int(input("Insert the seed for the random number: "))
+    seed = int(params['seed'])
 
     rows = len(block_id_matrix)
     cols = len(block_id_matrix[0])
@@ -364,17 +367,17 @@ def local_search_random_2(block_dict, block_id_matrix):
                     for column in range(new_block["begin_column"], new_block["end_column"] + 1):
                         block_id_matrix[sequence, column] = new_block["id"]
             
-    return block_dict, block_id_matrix, "lsr2", str(seed)
+    return block_dict, block_id_matrix
  
-def simulated_annealing(block_dict, block_id_matrix):
+def simulated_annealing(block_dict, block_id_matrix, params):
     # Ask user inputs
-    seed = 3 #int(input("Insert the seed for the random number: "))
+    seed = int(params['seed'])
     random.seed(seed)
-    temperature = 100 #int(input("Insert the temperature: "))
-    termination_temperature = 5 #int(input("Insert the termination temperature: "))
-    cooling_factor = 0.99 #float(input("Insert the cooling factor (between 0 and 1):"))
-    threshold = 3 #int(input("Insert the threshold: "))
-    penalization = 3 #int(input("Insert the penalization: "))
+    temperature = int(params['temperature']) 
+    termination_temperature = int(params['termination_temperature']) 
+    cooling_factor = float(params['cooling_factor']) 
+    threshold = 3
+    penalization = 3 
 
 
     rows = len(block_id_matrix)
@@ -486,13 +489,13 @@ def simulated_annealing(block_dict, block_id_matrix):
                         block_id_matrix[sequence, column] = new_block["id"]
           
             # Cooling condition
-            if list_possible_moves[n_rand][0] != "column_split" and list_possible_moves[n_rand][0] != "row_split":
+            if list_possible_moves[n_rand][0] == "column_split" or list_possible_moves[n_rand][0] == "row_split":
                 temperature = cooling_factor * temperature 
         print("Temperature:", temperature)
         if temperature <= termination_temperature:
             break
 
-    return block_dict, block_id_matrix, "sa", str(seed)
+    return block_dict, block_id_matrix
 
 
 #----------------------------------------------------------------------------------------
@@ -505,47 +508,50 @@ def of_min_label_length_threshold(threshold, penalization, label_length):
         return 0
 
 #----------------------------------------------------------------------------------------
-def main():
+def main(params_file, alignment_file, output_file, quality_file):
+
     # Reading the MSA
-    filename = "msas/mafft.op5-ep2/10-sars-cov-2-ena"  # Change this to your .fa file
-    #filename = "test2"
-    #sequences = read_fasta("Test_allignments/"+filename+".fa")
-    sequences = read_fasta(filename+".fa")
+    sequences = read_fasta(alignment_file) 
 
     # Convert sequences to matrix
-    sequence_matrix = sequences_to_matrix(sequences) 
-
+    sequence_matrix = sequences_to_matrix(sequences)    
+    
     # Convert each label in a block
     block_dict, block_id_matrix = build_blocks_from_sequence_matrix(sequence_matrix)
     
     # Euristich
-    block_dict, block_id_matrix, euristich, seed = simulated_annealing(block_dict, block_id_matrix)
-    #print(block_dict, block_id_matrix)
-   
-    # Calcola il valore obiettivo
+    config = configparser.ConfigParser()
+    config.read(params_file)
+    params = config['parameters']
+    euristich = str(params['euristich'])
+    match euristich:
+        case "lsr":
+            # Random Local Search
+            block_dict, block_id_matrix = local_search_random(block_dict, block_id_matrix, params)
+        case "sa":
+            # Simulated annealing
+            block_dict, block_id_matrix = simulated_annealing(block_dict, block_id_matrix, params)
+
+    
+    # Computing objective function
     objective_value = 0
     for key in block_dict:
         label = block_dict[key]['label']
-        label = label.translate(str.maketrans("", "", "-"))  # Rimuove il carattere "-"
+        label = label.translate(str.maketrans("", "", "-"))  # Remove the indel char "-"
         objective_value += of_min_label_length_threshold(3, 3, len(label))
 
-    print("Objective value lsr2:", objective_value)
+    #Graph
+    graph = build_graph(block_dict, block_id_matrix)
+
+    # Save graph
+    graph_to_gfa(graph, output_file)
+
+    # Scrivi la qualità nel file di qualità
+    with open(quality_file, 'w') as f:
+        f.write(str(objective_value))
+
 
     '''
-    #Graph
-    graph, pos = build_graph(block_dict, block_id_matrix)
-
-   
-    # Objective function
-    threshold = int(input("Insert the threshold: "))
-    penalization = int(input("Insert the penalization: "))
-    objective_value = 0
-    for node in graph.nodes():
-        label = graph.nodes[node]['label']
-        label = label.translate(str.maketrans("", "", "-"))
-        objective_value = objective_value + of_min_label_lenght_threshold(threshold, penalization, len(label))
-    print("Objective value lsr2:", objective_value)
-
     # Draw the graph 
     nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
     nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
@@ -562,4 +568,12 @@ def main():
     '''
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--params', required=True, help='Parameters file (.txt)')
+    parser.add_argument('--input', required=True, help='Alignment file, input file (.fa)')
+    parser.add_argument('--output', required=True, help='Output file (.gfa)')
+    parser.add_argument('--quality', required=True, help='Objective function value output file (.txt)')
+
+    args = parser.parse_args()
+
+    main(args.params, args.input, args.output, args.quality)
