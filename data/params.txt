@@ -1,6 +1,0 @@
-[parameters]
-euristich=sa
-seed=1
-temperature=100
-termination_temperature=10
-cooling_factor=0.95
