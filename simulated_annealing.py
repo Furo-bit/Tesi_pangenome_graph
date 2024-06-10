@@ -172,7 +172,7 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
         label = label.translate(str.maketrans("", "", "-"))  # Remove the indel char "-"
         objective_value += utils.of_min_label_length_threshold(3, 3, len(label))
 
-    #Graph
+    # Graph
     graph = utils.build_graph(block_dict, block_id_matrix)
 
     # Save graph

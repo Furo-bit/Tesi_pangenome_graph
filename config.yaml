@@ -1,6 +1,3 @@
-# config.yaml
-#script: "local_search.py"
-script: "simulated_annealing.py"
 parameters:
   local_search.py: "data/params_local_search.txt"
   simulated_annealing.py: "data/params_simulated_annealing.txt"

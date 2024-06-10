@@ -1,0 +1,250 @@
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                                  count
+---------------------------------  -------
+all                                      1
+concatenate_quality                      1
+run_alignment_local_search               7
+run_alignment_simulated_annealing        7
+total                                   16
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:42 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test7.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test7.gfa, output/simulated_annealing/test7_quality.txt
+    jobid: 14
+    reason: Missing output files: output/simulated_annealing/test7_quality.txt, output/simulated_annealing/test7.gfa
+    wildcards: alignment=test7
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:47 2024]
+Finished job 14.
+1 of 16 steps (6%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:47 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test7.fa, data/params_local_search.txt
+    output: output/local_search/test7.gfa, output/local_search/test7_quality.txt
+    jobid: 7
+    reason: Missing output files: output/local_search/test7_quality.txt, output/local_search/test7.gfa
+    wildcards: alignment=test7
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:49 2024]
+Finished job 7.
+2 of 16 steps (12%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:49 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test5.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test5.gfa, output/simulated_annealing/test5_quality.txt
+    jobid: 12
+    reason: Missing output files: output/simulated_annealing/test5.gfa, output/simulated_annealing/test5_quality.txt
+    wildcards: alignment=test5
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:51 2024]
+Finished job 12.
+3 of 16 steps (19%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:51 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test4.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test4.gfa, output/simulated_annealing/test4_quality.txt
+    jobid: 11
+    reason: Missing output files: output/simulated_annealing/test4.gfa, output/simulated_annealing/test4_quality.txt
+    wildcards: alignment=test4
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:53 2024]
+Finished job 11.
+4 of 16 steps (25%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:53 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test3.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test3.gfa, output/simulated_annealing/test3_quality.txt
+    jobid: 10
+    reason: Missing output files: output/simulated_annealing/test3.gfa, output/simulated_annealing/test3_quality.txt
+    wildcards: alignment=test3
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:55 2024]
+Finished job 10.
+5 of 16 steps (31%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:55 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test5.fa, data/params_local_search.txt
+    output: output/local_search/test5.gfa, output/local_search/test5_quality.txt
+    jobid: 5
+    reason: Missing output files: output/local_search/test5_quality.txt, output/local_search/test5.gfa
+    wildcards: alignment=test5
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:57 2024]
+Finished job 5.
+6 of 16 steps (38%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:57 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test4.fa, data/params_local_search.txt
+    output: output/local_search/test4.gfa, output/local_search/test4_quality.txt
+    jobid: 4
+    reason: Missing output files: output/local_search/test4.gfa, output/local_search/test4_quality.txt
+    wildcards: alignment=test4
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:11:58 2024]
+Finished job 4.
+7 of 16 steps (44%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:11:58 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test3.fa, data/params_local_search.txt
+    output: output/local_search/test3.gfa, output/local_search/test3_quality.txt
+    jobid: 3
+    reason: Missing output files: output/local_search/test3.gfa, output/local_search/test3_quality.txt
+    wildcards: alignment=test3
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:00 2024]
+Finished job 3.
+8 of 16 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:00 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test.gfa, output/simulated_annealing/test_quality.txt
+    jobid: 8
+    reason: Missing output files: output/simulated_annealing/test_quality.txt, output/simulated_annealing/test.gfa
+    wildcards: alignment=test
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:02 2024]
+Finished job 8.
+9 of 16 steps (56%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:02 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test2.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test2.gfa, output/simulated_annealing/test2_quality.txt
+    jobid: 9
+    reason: Missing output files: output/simulated_annealing/test2_quality.txt, output/simulated_annealing/test2.gfa
+    wildcards: alignment=test2
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:04 2024]
+Finished job 9.
+10 of 16 steps (62%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:04 2024]
+localrule run_alignment_simulated_annealing:
+    input: data/alignments/test6.fa, data/params_simulated_annealing.txt
+    output: output/simulated_annealing/test6.gfa, output/simulated_annealing/test6_quality.txt
+    jobid: 13
+    reason: Missing output files: output/simulated_annealing/test6_quality.txt, output/simulated_annealing/test6.gfa
+    wildcards: alignment=test6
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:06 2024]
+Finished job 13.
+11 of 16 steps (69%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:06 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test.fa, data/params_local_search.txt
+    output: output/local_search/test.gfa, output/local_search/test_quality.txt
+    jobid: 1
+    reason: Missing output files: output/local_search/test_quality.txt, output/local_search/test.gfa
+    wildcards: alignment=test
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:08 2024]
+Finished job 1.
+12 of 16 steps (75%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:08 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test2.fa, data/params_local_search.txt
+    output: output/local_search/test2.gfa, output/local_search/test2_quality.txt
+    jobid: 2
+    reason: Missing output files: output/local_search/test2_quality.txt, output/local_search/test2.gfa
+    wildcards: alignment=test2
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:10 2024]
+Finished job 2.
+13 of 16 steps (81%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:10 2024]
+localrule run_alignment_local_search:
+    input: data/alignments/test6.fa, data/params_local_search.txt
+    output: output/local_search/test6.gfa, output/local_search/test6_quality.txt
+    jobid: 6
+    reason: Missing output files: output/local_search/test6.gfa, output/local_search/test6_quality.txt
+    wildcards: alignment=test6
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:11 2024]
+Finished job 6.
+14 of 16 steps (88%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:12 2024]
+localrule concatenate_quality:
+    input: output/local_search/test_quality.txt, output/local_search/test2_quality.txt, output/local_search/test3_quality.txt, output/local_search/test4_quality.txt, output/local_search/test5_quality.txt, output/local_search/test6_quality.txt, output/local_search/test7_quality.txt, output/simulated_annealing/test_quality.txt, output/simulated_annealing/test2_quality.txt, output/simulated_annealing/test3_quality.txt, output/simulated_annealing/test4_quality.txt, output/simulated_annealing/test5_quality.txt, output/simulated_annealing/test6_quality.txt, output/simulated_annealing/test7_quality.txt
+    output: output/all_quality.csv
+    jobid: 15
+    reason: Input files updated by another job: output/local_search/test_quality.txt, output/simulated_annealing/test2_quality.txt, output/simulated_annealing/test_quality.txt, output/local_search/test7_quality.txt, output/simulated_annealing/test6_quality.txt, output/simulated_annealing/test5_quality.txt, output/simulated_annealing/test4_quality.txt, output/local_search/test2_quality.txt, output/simulated_annealing/test3_quality.txt, output/local_search/test6_quality.txt, output/simulated_annealing/test7_quality.txt, output/local_search/test4_quality.txt, output/local_search/test5_quality.txt, output/local_search/test3_quality.txt; Set of input files has changed since last execution; Code has changed since last execution; Params have changed since last execution
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:12 2024]
+Finished job 15.
+15 of 16 steps (94%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Mon Jun 10 17:12:12 2024]
+localrule all:
+    input: output/local_search/test.gfa, output/local_search/test2.gfa, output/local_search/test3.gfa, output/local_search/test4.gfa, output/local_search/test5.gfa, output/local_search/test6.gfa, output/local_search/test7.gfa, output/local_search/test_quality.txt, output/local_search/test2_quality.txt, output/local_search/test3_quality.txt, output/local_search/test4_quality.txt, output/local_search/test5_quality.txt, output/local_search/test6_quality.txt, output/local_search/test7_quality.txt, output/simulated_annealing/test.gfa, output/simulated_annealing/test2.gfa, output/simulated_annealing/test3.gfa, output/simulated_annealing/test4.gfa, output/simulated_annealing/test5.gfa, output/simulated_annealing/test6.gfa, output/simulated_annealing/test7.gfa, output/simulated_annealing/test_quality.txt, output/simulated_annealing/test2_quality.txt, output/simulated_annealing/test3_quality.txt, output/simulated_annealing/test4_quality.txt, output/simulated_annealing/test5_quality.txt, output/simulated_annealing/test6_quality.txt, output/simulated_annealing/test7_quality.txt, output/all_quality.csv
+    jobid: 0
+    reason: Input files updated by another job: output/local_search/test2.gfa, output/simulated_annealing/test_quality.txt, output/simulated_annealing/test.gfa, output/all_quality.csv, output/simulated_annealing/test5_quality.txt, output/local_search/test.gfa, output/simulated_annealing/test6.gfa, output/simulated_annealing/test3.gfa, output/local_search/test2_quality.txt, output/local_search/test4_quality.txt, output/simulated_annealing/test4_quality.txt, output/local_search/test6.gfa, output/local_search/test7.gfa, output/local_search/test3_quality.txt, output/simulated_annealing/test2.gfa, output/local_search/test_quality.txt, output/simulated_annealing/test2_quality.txt, output/simulated_annealing/test5.gfa, output/simulated_annealing/test7.gfa, output/local_search/test4.gfa, output/local_search/test7_quality.txt, output/local_search/test3.gfa, output/simulated_annealing/test4.gfa, output/simulated_annealing/test6_quality.txt, output/local_search/test5.gfa, output/simulated_annealing/test3_quality.txt, output/local_search/test6_quality.txt, output/simulated_annealing/test7_quality.txt, output/local_search/test5_quality.txt
+    resources: tmpdir=C:\Users\ANDREA~1\AppData\Local\Temp
+
+[Mon Jun 10 17:12:12 2024]
+Finished job 0.
+16 of 16 steps (100%) done
+Complete log: .snakemake\log\2024-06-10T171142.520686.snakemake.log
