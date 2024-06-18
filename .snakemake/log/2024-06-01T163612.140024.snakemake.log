@@ -1,5 +1,0 @@
-Building DAG of jobs...
-MissingInputException in rule all in file D:\Università\MAGISTRALE\Tesi\Pangenome_graph\Snakefile, line 1:
-Missing input files for rule all:
-    affected files:
-        output/result.gfa

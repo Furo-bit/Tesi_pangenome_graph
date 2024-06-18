@@ -3,6 +3,7 @@ import csv
 
 configfile: "config.yaml"
 
+
 rule all:
     input:
         expand("output/local_search/{alignment}.gfa", alignment=glob_wildcards("data/alignments/{alignment}.fa").alignment),
@@ -10,7 +11,8 @@ rule all:
         expand("output/simulated_annealing/{alignment}.gfa", alignment=glob_wildcards("data/alignments/{alignment}.fa").alignment),
         expand("output/simulated_annealing/{alignment}_quality.txt", alignment=glob_wildcards("data/alignments/{alignment}.fa").alignment),
         "output/all_quality.csv",
-        "output/quality_scores_plot.png"
+        "output/weight_scores_plot.png"
+
 
 rule run_alignment_local_search:
     input:
@@ -18,12 +20,13 @@ rule run_alignment_local_search:
         params=config["parameters"]["local_search.py"]
     output:
         gfa="output/local_search/{alignment}.gfa",
-        quality="output/local_search/{alignment}_quality.txt"
+        quality="output/local_search/{alignment}_quality.txt",
+        monitor_log="logs/local_search_{alignment}.log"
     params:
         script="local_search.py"
     shell:
         """
-        python {params.script} --params {input.params} --input {input.alignment} --output {output.gfa} --quality {output.quality}
+        /usr/bin/time --verbose python {params.script} --params {input.params} --input {input.alignment} --output {output.gfa} --quality {output.quality} > {output.monitor_log} 2>&1
         """
 
 rule run_alignment_simulated_annealing:
@@ -32,12 +35,13 @@ rule run_alignment_simulated_annealing:
         params=config["parameters"]["simulated_annealing.py"]
     output:
         gfa="output/simulated_annealing/{alignment}.gfa",
-        quality="output/simulated_annealing/{alignment}_quality.txt"
+        quality="output/simulated_annealing/{alignment}_quality.txt",
+        monitor_log="logs/simulated_annealing_{alignment}.log"
     params:
         script="simulated_annealing.py"
     shell:
         """
-        python {params.script} --params {input.params} --input {input.alignment} --output {output.gfa} --quality {output.quality}
+        /usr/bin/time --verbose python {params.script} --params {input.params} --input {input.alignment} --output {output.gfa} --quality {output.quality} > {output.monitor_log} 2>&1
         """
 
 rule concatenate_quality:
@@ -65,7 +69,7 @@ rule plot_quality:
     input:
         "output/all_quality.csv"
     output:
-        "output/quality_scores_plot.png"
+        "output/weight_scores_plot.png"
     shell:
         """
         python plot_quality.py

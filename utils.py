@@ -239,4 +239,10 @@ def of_min_label_length_threshold(threshold: int, penalization: int, label_lengt
     if label_length < threshold :
         return penalization * (threshold - label_length)
     else :
-        return 0
+        return 1
+
+def of_pangeblocks(threshold: int, penalization: int, label_length: int) -> int:
+    if label_length < threshold :
+        return penalization
+    else :
+        return 1    

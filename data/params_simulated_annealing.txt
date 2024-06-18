@@ -1,5 +1,5 @@
 [parameters]
-seed=42
+seed=19
 temperature=100
-termination_temperature=10
-cooling_factor=0.95
+termination_temperature=5
+cooling_factor=0.99

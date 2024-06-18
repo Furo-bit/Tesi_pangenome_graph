@@ -25,8 +25,10 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) ->
     rows = len(block_id_matrix)
     cols = len(block_id_matrix[0])
     cell_total = rows * cols
+    #if cell_total % 2 != 0:
+    #    cell_total += 1 
     # Generate a random numbers using the user-provided seed
-    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, cell_total*2)
+    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total/2))
     
     for x in random_numbers:
         # Transform the number in matrix indeces 
@@ -141,7 +143,7 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
     for key in block_dict:
         label = block_dict[key]['label']
         label = label.translate(str.maketrans("", "", "-"))  # Remove the indel char "-"
-        objective_value += utils.of_min_label_length_threshold(3, 3, len(label))
+        objective_value += utils.of_pangeblocks(4, 1000, len(label))
 
     # Graph
     graph = utils.build_graph(block_dict, block_id_matrix)
