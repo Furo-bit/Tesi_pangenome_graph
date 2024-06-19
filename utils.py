@@ -200,7 +200,8 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
             block_id = block_id_matrix[i, j]
             block = block_dict[block_id]
             G.add_node(block_id, label=block["label"], row=i, col=j)
-    '''        
+
+        
     # Calculate positions for nodes based on "row" and "col" attributes
     pos = {}
     for node, data in G.nodes(data=True):
@@ -210,7 +211,8 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
             pos[node] = (cols + 1, 0)
         else:
             pos[node] = (data['col'], -data['row'])  # Invert row value for upward display
-    '''
+    
+
     # Add edges
     for i in range(rows):
         G.add_edge("source", block_id_matrix[i, 0], label=block_dict[block_id_matrix[i, 0]]["sequence_ids"])
@@ -224,7 +226,7 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
                 common_sequences = list(set(current_block["sequence_ids"]).intersection(set(next_block["sequence_ids"])))
                 G.add_edge(current_block_id, next_block_id, label=common_sequences)
 
-    return G #, pos
+    return G#, pos
 
 def acceptance_probability(delta: float, temperature: float) -> float:
 
@@ -232,6 +234,30 @@ def acceptance_probability(delta: float, temperature: float) -> float:
 
     return math.exp(-delta / (boltzmann_constant * temperature))
 
+def remove_indle_from_graph(graph: nx.DiGraph) -> nx.DiGraph:
+    nodes_to_remove = [node for node, data in graph.nodes(data=True) if set(data.get('label', '')) == {"-"}]
+    new_edges = []
+    for node in nodes_to_remove:
+        predecessors = list(graph.predecessors(node))
+        successors = list(graph.successors(node))
+        for pred in predecessors:
+            for succ in successors:
+                if graph.has_edge(node, succ):
+                    edge_data = graph.get_edge_data(pred, node)
+                    graph.add_edge(pred, succ, **edge_data)
+     
+    graph.remove_nodes_from(nodes_to_remove)
+ 
+    for node, data in graph.nodes(data=True):
+        if 'label' in data: 
+            cleaned_label = data['label'].replace("-", "")
+            if cleaned_label != data['label']:
+                data['label'] = cleaned_label
+    
+    nodes_without_data = [node for node in graph.nodes() if 'label' not in graph.nodes[node]]
+    graph.remove_nodes_from(nodes_without_data)
+
+    return graph
 #----------------------------------------------------------------------------------------
 # Objective functions
 

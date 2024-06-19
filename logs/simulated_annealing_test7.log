@@ -1,18 +1,18 @@
 	Command being timed: "python simulated_annealing.py --params data/params_simulated_annealing.txt --input data/alignments/test7.fa --output output/simulated_annealing/test7.gfa --quality output/simulated_annealing/test7_quality.txt"
-	User time (seconds): 1.34
-	System time (seconds): 0.08
+	User time (seconds): 1.49
+	System time (seconds): 0.15
 	Percent of CPU this job got: 99%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.44
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.65
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 69636
+	Maximum resident set size (kbytes): 68604
 	Average resident set size (kbytes): 0
 	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 18397
-	Voluntary context switches: 5
-	Involuntary context switches: 23
+	Minor (reclaiming a frame) page faults: 18401
+	Voluntary context switches: 6
+	Involuntary context switches: 34
 	Swaps: 0
 	File system inputs: 0
 	File system outputs: 16

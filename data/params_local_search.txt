@@ -1,2 +1,4 @@
 [parameters]
-seed=19
+seed=202
+threshold=3
+penalization=3

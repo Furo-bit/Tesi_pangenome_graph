@@ -25,10 +25,8 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) ->
     rows = len(block_id_matrix)
     cols = len(block_id_matrix[0])
     cell_total = rows * cols
-    #if cell_total % 2 != 0:
-    #    cell_total += 1 
     # Generate a random numbers using the user-provided seed
-    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total/2))
+    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total*2))
     
     for x in random_numbers:
         # Transform the number in matrix indeces 
@@ -137,17 +135,16 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
     params = config['parameters']
     block_dict, block_id_matrix = local_search(block_dict, block_id_matrix, params)
 
-    
-    # Computing objective function
-    objective_value = 0
-    for key in block_dict:
-        label = block_dict[key]['label']
-        label = label.translate(str.maketrans("", "", "-"))  # Remove the indel char "-"
-        objective_value += utils.of_pangeblocks(4, 1000, len(label))
-
     # Graph
     graph = utils.build_graph(block_dict, block_id_matrix)
-
+    graph = utils.remove_indle_from_graph(graph)
+      
+    # Computing objective function
+    objective_value = 0
+    for node, data in graph.nodes(data=True):
+        label = data.get('label', '')
+        objective_value += utils.of_pangeblocks(int(params['threshold']), int(params['penalization']), len(label))
+    
     # Save graph
     utils.graph_to_gfa(graph, output_file)
 
@@ -161,15 +158,8 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
     nx.draw(graph, pos=pos, labels=nx.get_node_attributes(graph, 'label'), with_labels=True)
     nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=nx.get_edge_attributes(graph, 'label'), font_color='red')
 
-    # Save the image to a file
-    plt.savefig('Graphs_from_test/png_files/graph_image_'+filename+'_'+euristich+'_seed_'+seed+'.png')
-
     # Show the graph
     plt.show()
-
-    # Save graph
-    file_path = 'Graphs_from_test/gfa_files/graph_'+filename+'_'+euristich+'_seed_'+seed+'.gfa'
-    graph_to_gfa(graph, file_path)
     '''
 
 if __name__ == "__main__":

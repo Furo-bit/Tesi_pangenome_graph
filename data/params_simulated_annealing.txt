@@ -1,5 +1,7 @@
 [parameters]
-seed=19
+seed=202
+threshold=3
+penalization=3
 temperature=100
 termination_temperature=5
 cooling_factor=0.99
