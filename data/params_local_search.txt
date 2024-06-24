@@ -1,4 +1,4 @@
 [parameters]
-seed=202
+seed=2400
 threshold=3
 penalization=3

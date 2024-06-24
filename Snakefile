@@ -11,7 +11,9 @@ rule all:
         expand("output/simulated_annealing/{alignment}.gfa", alignment=glob_wildcards("data/alignments/{alignment}.fa").alignment),
         expand("output/simulated_annealing/{alignment}_quality.txt", alignment=glob_wildcards("data/alignments/{alignment}.fa").alignment),
         "output/all_quality.csv",
-        "output/weight_scores_plot.png"
+        "output/weight_scores_plot.png",
+        "output/elapsed_time.png",
+        "output/max_resident_size.png"
 
 
 rule run_alignment_local_search:
@@ -74,3 +76,14 @@ rule plot_quality:
         """
         python plot_quality.py
         """
+
+rule generate_plots:
+    input:
+        "output/weight_scores_plot.png",
+        logs="logs"
+    output:
+        elapsed_time="output/elapsed_time.png",
+        max_resident_size="output/max_resident_size.png"
+    shell:
+        "python log_plot.py {input.logs} output"
+
