@@ -37,7 +37,7 @@ def sequences_to_matrix(sequences: Dict[str, List[str]]) -> List[List[str]]:
         matrix.append(padded_sequence)
     return matrix
 
-# From labels to block dict and block id matrix
+# From labels to block dict and block id matrix, every single label is a block
 def build_blocks_from_sequence_matrix(sequence_matrix: List[List[str]]) -> Tuple[Dict[str, Dict], np.ndarray]:
     block_dict = {}
     num_seq = len(sequence_matrix)
@@ -58,6 +58,54 @@ def build_blocks_from_sequence_matrix(sequence_matrix: List[List[str]]) -> Tuple
     
     return block_dict, block_id_matrix
 
+# From labels to block dict and block id matrix, every sequence is a block
+def build_long_blocks_from_sequence_matrix(sequence_matrix: List[List[str]]) -> Tuple[Dict[str, Dict], np.ndarray]:
+    block_dict = {}
+    num_seq = len(sequence_matrix)
+    num_bases = len(sequence_matrix[0])    
+    block_id_matrix = np.empty((num_seq, num_bases), dtype=object)
+
+    for sequence_index in range(num_seq):
+        block_id = "B" + str(sequence_index)
+        sequence = ''.join(sequence_matrix[sequence_index])
+        for base_index in range(num_bases):  
+            block_dict[block_id] = create_block(
+                block_id,
+                sequence,
+                sequence_index,
+                0,
+                num_bases-1
+            )
+            block_id_matrix[sequence_index, base_index] = block_id
+    
+    return block_dict, block_id_matrix
+
+# From dict block and matrix, do greedy row block merge
+def greedy_row_merge(block_dict: Dict, block_id_matrix: np.ndarray) -> Tuple[Dict[str, Dict], np.ndarray]:
+    num_seq, num_bases = block_id_matrix.shape
+    for i in range(num_seq):
+        for j in range(num_bases):
+            for z in range(num_seq):
+                block_1 = block_dict[block_id_matrix[i, j]] 
+                block_2 = block_dict[block_id_matrix[z, j]]
+                if block_1["id"] != block_2["id"]:
+                    if block_1["label"] == block_2["label"]:
+                        #print("Block1:",block_dict[block_1["id"]],"block2:",block_dict[block_2["id"]])
+                        if z < i:
+                            new_block = merge_two_blocks(block_2, block_1, "row_union")
+                            block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
+                            del block_dict[block_1["id"]]
+                        else: 
+                            new_block = merge_two_blocks(block_1, block_2, "row_union")
+                            block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
+                            del block_dict[block_2["id"]]
+                        #print("newBlock:",new_block)
+                        for sequence in new_block["sequence_ids"]:
+                            for column in range(new_block["begin_column"], new_block["end_column"] + 1):
+                                block_id_matrix[sequence, column] = new_block["id"]
+
+    return block_dict, block_id_matrix
+
 # Merge two blocks in one
 def merge_two_blocks(block_1: Dict, block_2: Dict, how: str) -> Dict:
     valid_values = {"column_union", "row_union"}
@@ -73,7 +121,6 @@ def merge_two_blocks(block_1: Dict, block_2: Dict, how: str) -> Dict:
             "begin_column": block_1["begin_column"],
             "end_column": block_2["end_column"]
         }
-        #print(block_1["id"], "with", block_2["id"], "by columns, new label:", new_labels)
     elif how == "row_union":
         new_sequence_ids = block_1["sequence_ids"] + block_2["sequence_ids"]
         new_block = {
@@ -83,7 +130,6 @@ def merge_two_blocks(block_1: Dict, block_2: Dict, how: str) -> Dict:
             "begin_column": block_1["begin_column"],
             "end_column": block_1["end_column"]
         }
-        #print(block_1["id"], "with", block_2["id"], "by rows, new sequences:", new_sequence_ids)
     return new_block
 
 # Split one block in two by column
@@ -187,7 +233,7 @@ def generate_random_number(seed: int, start: int, end: int) -> int:
     random.seed(seed)
     return random.randint(start, end)
 
-
+# Build graph from block dict and block id matrix
 def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
     G = nx.DiGraph()
     rows, cols = block_id_matrix.shape

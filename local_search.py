@@ -128,6 +128,8 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
     
     # Convert each label in a block
     block_dict, block_id_matrix = utils.build_blocks_from_sequence_matrix(sequence_matrix)
+    block_dict, block_id_matrix = utils.greedy_row_merge(block_dict, block_id_matrix)
+
     
     # Local search
     config = configparser.ConfigParser()
