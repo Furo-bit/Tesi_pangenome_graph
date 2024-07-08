@@ -1,4 +1,5 @@
 [parameters]
-seed=2405
+seed=2410
+start=sequence_blocks
 threshold=3
 penalization=3

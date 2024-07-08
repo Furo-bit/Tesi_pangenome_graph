@@ -126,15 +126,23 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
     # Convert sequences to matrix
     sequence_matrix = utils.sequences_to_matrix(sequences)    
     
-    # Convert each label in a block
-    block_dict, block_id_matrix = utils.build_blocks_from_sequence_matrix(sequence_matrix)
-    block_dict, block_id_matrix = utils.greedy_row_merge(block_dict, block_id_matrix)
-
-    
-    # Local search
     config = configparser.ConfigParser()
     config.read(params_file)
     params = config['parameters']
+    start = str(params['start'])
+
+    if start == "unitary_blocks":
+        block_dict, block_id_matrix = utils.build_blocks_from_sequence_matrix(sequence_matrix)
+    elif start == "greedy_rows":
+        block_dict, block_id_matrix = utils.build_blocks_from_sequence_matrix(sequence_matrix)
+        block_dict, block_id_matrix = utils.greedy_row_merge(block_dict, block_id_matrix)
+    elif start == "sequence_blocks":
+        block_dict, block_id_matrix = utils.build_long_blocks_from_sequence_matrix(sequence_matrix)
+    else:
+        raise ValueError(f"Unexpected value for start: {start}")
+
+    
+    # Local search
     block_dict, block_id_matrix = local_search(block_dict, block_id_matrix, params)
 
     # Graph
