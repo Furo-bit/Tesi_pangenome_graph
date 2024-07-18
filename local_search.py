@@ -19,14 +19,13 @@ import utils
 # Local search
 
 def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> Tuple[Dict, np.ndarray]:
-     # Ask user input
-    seed = int(params['seed'])
 
+    seed = int(params['seed'])
     rows = len(block_id_matrix)
     cols = len(block_id_matrix[0])
     cell_total = rows * cols
     # Generate a random numbers using the user-provided seed
-    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total*2))
+    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, cell_total)
     
     for x in random_numbers:
         # Transform the number in matrix indeces 

@@ -1,3 +1,4 @@
 parameters:
   local_search.py: "data/params_local_search.txt"
   simulated_annealing.py: "data/params_simulated_annealing.txt"
+  tabu_search.py: "data/params_tabu_search.txt"

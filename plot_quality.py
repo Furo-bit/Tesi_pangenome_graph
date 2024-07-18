@@ -15,10 +15,10 @@ plt.style.use('ggplot')
 fig, ax = plt.subplots(figsize=(10, 6))
 
 # Define colors for each program
-colors = {'local_search.py': 'blue', 'simulated_annealing.py': 'green'}
+colors = {'local_search.py': 'blue', 'simulated_annealing.py': 'green', 'tabu_search.py' : 'red'}
 
 # Define the width of a single bar
-bar_width = 0.4
+bar_width = 0.2
 
 # Get unique alignments and the number of programs
 alignments = df['Alignment'].unique()

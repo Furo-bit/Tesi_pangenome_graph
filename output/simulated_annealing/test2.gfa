@@ -1,12 +1,23 @@
 H	VN:Z:1.0
 S	source	*	LN:i:source
 S	sink	*	LN:i:sink
-S	B0	*	LN:i:CTCGGGAAA
-S	B1	*	LN:i:TTTGGCCCA
-S	B2	*	LN:i:TTTGGCCCC
-L	source	+	B0	+	[0]
-L	source	+	B1	+	[1]
-L	source	+	B2	+	[2]
-L	B0	+	sink	+	[0]
-L	B1	+	sink	+	[1]
-L	B2	+	sink	+	[2]
+S	B0.0	*	LN:i:CTC
+S	B1.3	*	LN:i:G
+S	B0.4	*	LN:i:GGAA
+S	B0.8	*	LN:i:A
+S	B1.0	*	LN:i:TTT
+S	B1.4	*	LN:i:GCC
+S	B1.7	*	LN:i:C
+S	B2.7	*	LN:i:CC
+L	source	+	B0.0	+	[0]
+L	source	+	B1.0	+	[1, 2]
+L	B0.0	+	B1.3	+	[0]
+L	B1.3	+	B0.4	+	[0]
+L	B1.3	+	B1.4	+	[1, 2]
+L	B0.4	+	B0.8	+	[0]
+L	B0.8	+	sink	+	[0, 1]
+L	B1.0	+	B1.3	+	[1, 2]
+L	B1.4	+	B1.7	+	[1]
+L	B1.4	+	B2.7	+	[2]
+L	B1.7	+	B0.8	+	[1]
+L	B2.7	+	sink	+	[2]

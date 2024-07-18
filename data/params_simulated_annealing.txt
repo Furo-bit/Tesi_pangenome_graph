@@ -1,6 +1,6 @@
 [parameters]
-seed=2410
-start=sequence_blocks
+seed=11
+start=unitary_blocks
 threshold=3
 penalization=3
 temperature=100
