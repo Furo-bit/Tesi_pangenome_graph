@@ -136,7 +136,6 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> 
         for block in blocks_to_delete:
             del tabu_dict[block]
 
-        print(tabu_dict)
     return block_dict, block_id_matrix
 
 

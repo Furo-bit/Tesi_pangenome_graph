@@ -8,13 +8,16 @@ def parse_log_file(filepath):
     with open(filepath, 'r') as file:
         for line in file:
             if "	User time (seconds):" in line:
-                user_time = float(line.split(":")[1].strip())
+                # Convert seconds to minutes
+                user_time = float(line.split(":")[1].strip()) / 60
                 data['User Time'] = user_time
             elif "	System time (seconds):" in line:
-                system_time = float(line.split(":")[1].strip())
+                # Convert seconds to minutes
+                system_time = float(line.split(":")[1].strip()) / 60
                 data['System Time'] = system_time
             elif "	Maximum resident set size (kbytes):" in line:
-                max_resident_size = int(line.split(":")[1].strip())
+                # Convert kilobytes to gigabytes
+                max_resident_size = int(line.split(":")[1].strip()) / (1024 * 1024)
                 data['Max Resident Size'] = max_resident_size
 
     if 'User Time' in data and 'System Time' in data:
@@ -42,29 +45,30 @@ for filename in sorted(os.listdir(log_dir)):
 df = pd.DataFrame(data_list, index=file_names)
 
 if 'Elapsed Time' in df.columns and 'Max Resident Size' in df.columns:
-    # Creazione del grafico a barre per il tempo
+    # Plotting Elapsed Time
     plt.figure(figsize=(14, 8))
-    plt.bar(df.index, df['Elapsed Time'], color='tab:blue', label='Elapsed Time (s)')
+    plt.bar(df.index, df['Elapsed Time'], color='tab:blue', label='Elapsed Time (minutes)')
     plt.xlabel('Log File')
-    plt.ylabel('Elapsed Time (s)')
+    plt.ylabel('Elapsed Time (minutes)')
     plt.title('Elapsed Time from Log Files')
     plt.xticks(rotation=90)  
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig('output/elapsed_time.png')
+    plt.savefig(os.path.join(output_dir, 'elapsed_time.png'))
     plt.close()
 
+    # Plotting Max Resident Size
     plt.figure(figsize=(14, 8))
-    plt.bar(df.index, df['Max Resident Size'], color='tab:red', label='Max Resident Size (KB)')
+    plt.bar(df.index, df['Max Resident Size'], color='tab:red', label='Max Resident Size (GB)')
     plt.xlabel('Log File')
-    plt.ylabel('Max Resident Size (KB)')
+    plt.ylabel('Max Resident Size (GB)')
     plt.title('Max Resident Size from Log Files')
     plt.xticks(rotation=90)  
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig('output/max_resident_size.png')
+    plt.savefig(os.path.join(output_dir, 'max_resident_size.png'))
     plt.close()
 else:
     print("Errore: Le colonne 'Elapsed Time' e/o 'Max Resident Size' non sono presenti nel DataFrame")

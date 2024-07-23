@@ -94,9 +94,9 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
                 label_nb1 = label_nb1.translate(str.maketrans("", "", "-"))
                 label_nb2 = label_nb2.translate(str.maketrans("", "", "-"))
 
-                delta = (utils.of_min_label_length_threshold(threshold, penalization, len(label_nb1)) +
-                        utils.of_min_label_length_threshold(threshold, penalization, len(label_nb2)) -
-                        utils.of_min_label_length_threshold(threshold, penalization, len(label_b1))
+                delta = (utils.of_pangeblocks(threshold, penalization, len(label_nb1)) +
+                        utils.of_pangeblocks(threshold, penalization, len(label_nb2)) -
+                        utils.of_pangeblocks(threshold, penalization, len(label_b1))
                         )                  
 
                 probability = utils.acceptance_probability(delta, temperature)

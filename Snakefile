@@ -15,7 +15,8 @@ rule all:
         "output/all_quality.csv",
         "output/weight_scores_plot.png",
         "output/elapsed_time.png",
-        "output/max_resident_size.png"
+        "output/max_resident_size.png",
+        "output/vertex_plot.png"
 
 
 rule run_alignment_local_search:
@@ -110,3 +111,11 @@ rule generate_plots:
     shell:
         "python log_plot.py {input.logs} output"
 
+rule plot_vertices:
+    input:
+        "output/elapsed_time.png",
+        directories=["output/local_search", "output/simulated_annealing", "output/tabu_search"]
+    output:
+        vertex_plot="output/vertex_plot.png"
+    shell:
+        "python vertex_plot.py {input.directories} output"

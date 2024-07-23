@@ -1,5 +1,5 @@
 [parameters]
-seed=11
+seed=10
 start=unitary_blocks
-threshold=3
-penalization=3
+threshold=20
+penalization=1000
