@@ -28,7 +28,7 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) ->
     cell_total = rows * cols
     limit = cols
     # Generate a random numbers using the user-provided seed
-    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total/3))
+    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total))
     
     for x in random_numbers:
         # Transform the number in matrix indeces 
@@ -53,6 +53,35 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) ->
                     block_1["end_column"] == block_2["end_column"] and
                     block_1["label"] == block_2["label"]):
                     list_mergeable_vertical += [block_2["id"]]
+        
+        # Check for greedy column merge
+        list_mergeable_vertical_greedy = []
+        list_used_ids = []
+        for i in range(rows):
+            list_i_mergeable = []
+            block_a = block_dict[block_id_matrix[i, col_index]]
+            for z in range(i, rows):
+                block_b = block_dict[block_id_matrix[z, col_index]]      
+                if block_a["id"] != block_b["id"] and block_b["id"] not in list_used_ids:
+                    if (block_a["begin_column"] == block_b["begin_column"] and
+                        block_a["end_column"] == block_b["end_column"] and
+                        block_a["label"] == block_b["label"]):
+                        list_i_mergeable += [block_b["id"]]
+                        list_used_ids += [block_b["id"]]
+            if list_i_mergeable != []:
+                list_i_mergeable = [block_a["id"]] + list_i_mergeable
+                list_mergeable_vertical_greedy += [list_i_mergeable]
+        if list_mergeable_vertical_greedy != []:
+        # Calculate greedy vertical gain
+            vertical_greedy_merge_gain = 0
+            for comp_list in list_mergeable_vertical_greedy:
+                block_greedy = block_dict[comp_list[0]]
+                block_greedy_label = block_greedy["label"]
+                block_greedy_label = block_greedy_label.translate(str.maketrans("", "", "-"))
+                block_greedy_label = utils.of_pangeblocks(threshold, penalization, len(block_greedy_label)) 
+                vertical_greedy_merge_gain += - (block_greedy_label * (len(comp_list) - 1))
+            operation_gains["row_merge_greedy"] = vertical_greedy_merge_gain
+                                                    
         
         # Calculate gain
         vertical_merge_gain = block_1_label_value
@@ -163,6 +192,7 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) ->
         if operation_gains != {}:
             operation_gains = dict(sorted(operation_gains.items(), key=lambda item: item[1]))
             operation, gain = next(iter(operation_gains.items()))
+            print(operation, gain)
 
             if operation == "row_merge":
                 # row merge
@@ -213,7 +243,22 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) ->
                 del block_dict[block_1["id"]]
                 block_dict[new_block_1c["id"]] = new_block_1c
                 block_dict[new_block_2c["id"]] = new_block_2c  
-  
+            
+            elif operation == "row_merge_greedy":
+                # Do all the operations 
+                for comp_list in list_mergeable_vertical_greedy:
+                    block_1_id = comp_list[0]
+                    block_1 = block_dict[block_1_id]
+                    for block_2_id in comp_list:
+                        if block_1_id != block_2_id:
+                            block_2 = block_dict[block_2_id]
+                            block_1 = utils.merge_two_blocks(block_1, block_2, "row_union")
+                            del block_dict[block_2["id"]]
+                    block_dict[block_1_id] = block_1
+                    for sequence in block_1["sequence_ids"]:
+                        for column in range(block_1["begin_column"], block_1["end_column"] + 1):
+                            block_id_matrix[sequence, column] = block_1["id"]
+
     return block_dict, block_id_matrix
 
 #----------------------------------------------------------------------------------------

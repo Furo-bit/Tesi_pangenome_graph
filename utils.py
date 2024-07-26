@@ -90,7 +90,6 @@ def greedy_row_merge(block_dict: Dict, block_id_matrix: np.ndarray) -> Tuple[Dic
                 block_2 = block_dict[block_id_matrix[z, j]]
                 if block_1["id"] != block_2["id"]:
                     if block_1["label"] == block_2["label"]:
-                        #print("Block1:",block_dict[block_1["id"]],"block2:",block_dict[block_2["id"]])
                         if z < i:
                             new_block = merge_two_blocks(block_2, block_1, "row_union")
                             block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2["id"], block_1["id"])
@@ -99,7 +98,6 @@ def greedy_row_merge(block_dict: Dict, block_id_matrix: np.ndarray) -> Tuple[Dic
                             new_block = merge_two_blocks(block_1, block_2, "row_union")
                             block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1["id"], block_2["id"])
                             del block_dict[block_2["id"]]
-                        #print("newBlock:",new_block)
                         for sequence in new_block["sequence_ids"]:
                             for column in range(new_block["begin_column"], new_block["end_column"] + 1):
                                 block_id_matrix[sequence, column] = new_block["id"]
@@ -272,7 +270,7 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
                 common_sequences = list(set(current_block["sequence_ids"]).intersection(set(next_block["sequence_ids"])))
                 G.add_edge(current_block_id, next_block_id, label=common_sequences)
 
-    return G#, pos
+    return G, pos
 
 def acceptance_probability(delta: float, temperature: float) -> float:
 
