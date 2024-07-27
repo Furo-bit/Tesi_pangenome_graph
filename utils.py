@@ -272,11 +272,9 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
 
     return G, pos
 
-def acceptance_probability(delta: float, temperature: float) -> float:
+def acceptance_probability(delta: float, temperature: float, beta: float) -> float:
 
-    boltzmann_constant = 1.380649e-23  # Boltzmann constant (J/K)
-
-    return math.exp(-delta / (boltzmann_constant * temperature))
+    return math.exp(-beta * delta / temperature)
 
 def remove_indle_from_graph(graph: nx.DiGraph) -> nx.DiGraph:
     nodes_to_remove = [node for node, data in graph.nodes(data=True) if set(data.get('label', '')) == {"-"}]
