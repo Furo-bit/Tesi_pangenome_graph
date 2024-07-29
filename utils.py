@@ -243,7 +243,8 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
         for j in range(cols):
             block_id = block_id_matrix[i, j]
             block = block_dict[block_id]
-            G.add_node(block_id, label=block["label"], row=i, col=j)
+            if block["label"].replace('-', '') != '':
+                G.add_node(block_id, label=block["label"].replace('-', ''), row=i, col=j)
 
         
     # Calculate positions for nodes based on "row" and "col" attributes
@@ -256,7 +257,7 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
         else:
             pos[node] = (data['col'], -data['row'])  # Invert row value for upward display
     
-
+    '''
     # Add edges
     for i in range(rows):
         G.add_edge("source", block_id_matrix[i, 0], label=block_dict[block_id_matrix[i, 0]]["sequence_ids"])
@@ -269,6 +270,48 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
                 next_block = block_dict[next_block_id]
                 common_sequences = list(set(current_block["sequence_ids"]).intersection(set(next_block["sequence_ids"])))
                 G.add_edge(current_block_id, next_block_id, label=common_sequences)
+    '''
+
+    # Add edges
+    # normal edges
+    for row in range(rows):
+        for col in range(cols-1):
+            block_1_id = block_id_matrix[row, col]
+            block_1 = block_dict[block_1_id]
+            for col2 in range(col+1, cols):
+                block_2_id = block_id_matrix[row, col2]
+                block_2 = block_dict[block_2_id]
+                if block_2["label"].replace('-', '') != '' and block_1_id != block_2_id:
+                    if (block_1_id, block_2_id) not in G.edges:
+                        G.add_edge(block_1_id, block_2_id, label=str(row))
+                    else:
+                        G.edges[block_1_id, block_2_id]['label'] = G.edges[block_1_id, block_2_id]['label'] + "," + str(row)
+                    break
+    
+    # source edges
+    for row in range(rows):
+        for col in range(cols):
+            block_id = block_id_matrix[row, col]
+            block = block_dict[block_id]
+            if block["label"].replace('-', '') != '':
+                if ("source", block_id) not in G.edges:
+                    G.add_edge("source", block_id, label=str(row))
+                else:
+                    G.edges["source", block_id]['label'] = G.edges["source", block_id]['label'] + "," + str(row)
+                break
+
+    
+    # sink edges
+    for row in range(rows):
+        for col in range(cols-1, -1, -1):
+            block_id = block_id_matrix[row, col]
+            block = block_dict[block_id]
+            if block["label"].replace('-', '') != '':
+                if (block_id, "sink") not in G.edges:              
+                    G.add_edge(block_id, "sink", label=str(row))
+                else: 
+                    G.edges[block_id, "sink"]['label'] = G.edges[block_id, "sink"]['label'] + "," + str(row)
+                break
 
     return G, pos
 
