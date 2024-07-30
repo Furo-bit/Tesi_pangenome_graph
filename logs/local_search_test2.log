@@ -1,20 +1,20 @@
 	Command being timed: "python local_search.py --params data/params_local_search.txt --input data/alignments/test2.fa --output output/local_search/test2.gfa --quality output/local_search/test2_quality.txt"
-	User time (seconds): 1.47
-	System time (seconds): 0.15
-	Percent of CPU this job got: 74%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.19
+	User time (seconds): 1.13
+	System time (seconds): 0.04
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.19
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 68700
+	Maximum resident set size (kbytes): 68988
 	Average resident set size (kbytes): 0
-	Major (requiring I/O) page faults: 120
-	Minor (reclaiming a frame) page faults: 18360
-	Voluntary context switches: 2099
-	Involuntary context switches: 14
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 18599
+	Voluntary context switches: 3
+	Involuntary context switches: 7
 	Swaps: 0
-	File system inputs: 9160
+	File system inputs: 0
 	File system outputs: 16
 	Socket messages sent: 0
 	Socket messages received: 0

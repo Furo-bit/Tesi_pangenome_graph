@@ -1,0 +1,10 @@
+Alignment,Quality,Program
+30-sars-cov-2-ena,112438003,local_search.py
+20-sars-cov-2-ena,103970006,local_search.py
+10-sars-cov-2-ena,75877005,local_search.py
+30-sars-cov-2-ena,2030,simulated_annealing.py
+20-sars-cov-2-ena,2019,simulated_annealing.py
+10-sars-cov-2-ena,2010,simulated_annealing.py
+30-sars-cov-2-ena,114905005,tabu_search.py
+20-sars-cov-2-ena,97691001,tabu_search.py
+10-sars-cov-2-ena,70949006,tabu_search.py

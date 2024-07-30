@@ -278,15 +278,17 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
         for col in range(cols-1):
             block_1_id = block_id_matrix[row, col]
             block_1 = block_dict[block_1_id]
-            for col2 in range(col+1, cols):
-                block_2_id = block_id_matrix[row, col2]
-                block_2 = block_dict[block_2_id]
-                if block_2["label"].replace('-', '') != '' and block_1_id != block_2_id:
-                    if (block_1_id, block_2_id) not in G.edges:
-                        G.add_edge(block_1_id, block_2_id, label=str(row))
-                    else:
-                        G.edges[block_1_id, block_2_id]['label'] = G.edges[block_1_id, block_2_id]['label'] + "," + str(row)
-                    break
+            if block_1["label"].replace('-', '') != '':
+                for col2 in range(col+1, cols):
+                    block_2_id = block_id_matrix[row, col2]
+                    block_2 = block_dict[block_2_id]
+                    if block_2["label"].replace('-', '') != '' and block_1_id != block_2_id:
+                        if (block_1_id, block_2_id) not in G.edges:
+                            G.add_edge(block_1_id, block_2_id, label=str(row))
+                        else:
+                            if check_number_in_string(row, G.edges[block_1_id, block_2_id]['label']) == False:
+                                G.edges[block_1_id, block_2_id]['label'] = G.edges[block_1_id, block_2_id]['label'] + "," + str(row)
+                        break
     
     # source edges
     for row in range(rows):
@@ -297,7 +299,8 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
                 if ("source", block_id) not in G.edges:
                     G.add_edge("source", block_id, label=str(row))
                 else:
-                    G.edges["source", block_id]['label'] = G.edges["source", block_id]['label'] + "," + str(row)
+                    if check_number_in_string(row, G.edges["source", block_id]['label']) == False:
+                        G.edges["source", block_id]['label'] = G.edges["source", block_id]['label'] + "," + str(row)
                 break
 
     
@@ -310,10 +313,16 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
                 if (block_id, "sink") not in G.edges:              
                     G.add_edge(block_id, "sink", label=str(row))
                 else: 
-                    G.edges[block_id, "sink"]['label'] = G.edges[block_id, "sink"]['label'] + "," + str(row)
+                    if check_number_in_string(row, G.edges[block_id, "sink"]['label']) == False:
+                        G.edges[block_id, "sink"]['label'] = G.edges[block_id, "sink"]['label'] + "," + str(row)
                 break
 
     return G, pos
+
+def check_number_in_string(number, string):
+    numbers = string.split(',')
+    return str(number) in numbers
+
 
 def acceptance_probability(delta: float, temperature: float, beta: float) -> float:
 

@@ -1,0 +1,73 @@
+H	VN:Z:1.0
+S	source	*	LN:i:source
+S	sink	*	LN:i:sink
+S	B0.0	*	LN:i:G
+S	B0.3	*	LN:i:T
+S	B0.4	*	LN:i:ccGT
+S	B0.8	*	LN:i:a
+S	B0.9	*	LN:i:a
+S	B0.10	*	LN:i:ga
+S	B1.0	*	LN:i:acg
+S	B1.3	*	LN:i:tA
+S	B2.5	*	LN:i:c
+S	B1.6	*	LN:i:gtAc
+S	B1.10	*	LN:i:g
+S	B1.11	*	LN:i:A
+S	B2.0	*	LN:i:Ac
+S	B2.2	*	LN:i:g
+S	B2.3	*	LN:i:ta
+S	B2.6	*	LN:i:g
+S	B2.7	*	LN:i:tAc
+S	B3.0	*	LN:i:Acg
+S	B3.7	*	LN:i:tAc
+S	B3.10	*	LN:i:t
+S	B3.11	*	LN:i:a
+S	B4.0	*	LN:i:Tc
+S	B4.4	*	LN:i:a
+S	B4.7	*	LN:i:t
+S	B4.10	*	LN:i:N
+S	B5.0	*	LN:i:T
+S	B5.4	*	LN:i:Ttt
+S	B5.9	*	LN:i:cN
+L	source	+	B0.0	+	[0]
+L	source	+	B1.0	+	[1]
+L	source	+	B2.0	+	[2]
+L	source	+	B3.0	+	[3]
+L	source	+	B4.0	+	[4]
+L	source	+	B5.0	+	[5]
+L	B0.0	+	B0.3	+	[0]
+L	B0.3	+	B0.4	+	[0]
+L	B0.3	+	B4.4	+	[4]
+L	B0.3	+	B5.4	+	[5]
+L	B0.4	+	B0.8	+	[0]
+L	B0.8	+	B0.9	+	[0, 4]
+L	B0.8	+	B5.9	+	[5]
+L	B0.9	+	B0.10	+	[0]
+L	B0.9	+	B4.10	+	[4]
+L	B0.10	+	sink	+	[0]
+L	B1.0	+	B1.3	+	[1]
+L	B1.3	+	B2.5	+	[1, 3]
+L	B2.5	+	B1.6	+	[1]
+L	B2.5	+	B2.6	+	[2, 3, 4]
+L	B1.6	+	B1.10	+	[1]
+L	B1.10	+	B1.11	+	[1]
+L	B1.11	+	sink	+	[1, 2]
+L	B2.0	+	B2.2	+	[2]
+L	B2.2	+	B2.3	+	[2]
+L	B2.2	+	B0.3	+	[4, 5]
+L	B2.3	+	B2.5	+	[2]
+L	B2.6	+	B2.7	+	[2]
+L	B2.6	+	B3.7	+	[3]
+L	B2.6	+	B4.7	+	[4]
+L	B2.7	+	B1.11	+	[2]
+L	B3.0	+	B1.3	+	[3]
+L	B3.7	+	B3.10	+	[3]
+L	B3.10	+	B3.11	+	[3]
+L	B3.11	+	sink	+	[3, 4, 5]
+L	B4.0	+	B2.2	+	[4]
+L	B4.4	+	B2.5	+	[4]
+L	B4.7	+	B0.8	+	[4]
+L	B4.10	+	B3.11	+	[4]
+L	B5.0	+	B2.2	+	[5]
+L	B5.4	+	B0.8	+	[5]
+L	B5.9	+	B3.11	+	[5]

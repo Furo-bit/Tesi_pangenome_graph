@@ -1,37 +1,16 @@
 H	VN:Z:1.0
 S	source	*	LN:i:source
 S	sink	*	LN:i:sink
-S	B0.0	*	LN:i:C
-S	B0.1_1	*	LN:i:T
-S	B0.2	*	LN:i:CG
-S	B0.4	*	LN:i:GGAAA
-S	B1.0	*	LN:i:T
-S	B1.2_1	*	LN:i:T
-S	B1.3_1	*	LN:i:GG
-S	B1.3_2	*	LN:i:C
-S	B1.6_1	*	LN:i:CC
-S	B1.8	*	LN:i:A
-S	B2.0_1	*	LN:i:TT
-S	B1.2_2	*	LN:i:T
-S	B2.3	*	LN:i:G
-S	B2.4	*	LN:i:GC
-S	B1.6_2	*	LN:i:CCC
-L	source	+	B0.0	+	[0]
-L	source	+	B1.0	+	[1]
-L	source	+	B2.0_1	+	[2]
-L	B0.0	+	B0.1_1	+	[0]
-L	B0.1_1	+	B0.2	+	[0]
-L	B0.1_1	+	B1.2_1	+	[1]
-L	B0.2	+	B0.4	+	[0]
-L	B0.4	+	sink	+	[0]
-L	B1.0	+	B0.1_1	+	[1]
-L	B1.2_1	+	B1.3_1	+	[1]
-L	B1.3_1	+	B1.3_2	+	[1]
-L	B1.3_2	+	B1.6_1	+	[1]
-L	B1.6_1	+	B1.8	+	[1]
-L	B1.8	+	sink	+	[1]
-L	B2.0_1	+	B1.2_2	+	[2]
-L	B1.2_2	+	B2.3	+	[2]
-L	B2.3	+	B2.4	+	[2]
-L	B2.4	+	B1.6_2	+	[2]
-L	B1.6_2	+	sink	+	[2]
+S	B0.0_1	*	LN:i:C
+S	B0.0_2	*	LN:i:TCGGGAAA
+S	B1.0_1	*	LN:i:TTTGGCCC
+S	B1.0_2	*	LN:i:A
+S	B2.0_1	*	LN:i:TTTGGCCCC
+L	source	+	B0.0_1	+	0
+L	source	+	B1.0_1	+	1
+L	source	+	B2.0_1	+	2
+L	B0.0_1	+	B0.0_2	+	0
+L	B0.0_2	+	sink	+	0
+L	B1.0_1	+	B1.0_2	+	1
+L	B1.0_2	+	sink	+	1
+L	B2.0_1	+	sink	+	2

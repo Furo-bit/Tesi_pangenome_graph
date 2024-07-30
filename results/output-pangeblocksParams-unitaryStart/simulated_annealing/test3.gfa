@@ -1,0 +1,61 @@
+H	VN:Z:1.0
+S	source	*	LN:i:source
+S	sink	*	LN:i:sink
+S	B0.0	*	LN:i:G
+S	B1.3	*	LN:i:T
+S	B0.4	*	LN:i:C
+S	B1.5	*	LN:i:C
+S	B0.6	*	LN:i:GT
+S	B0.8	*	LN:i:A
+S	B0.9	*	LN:i:A
+S	B0.10	*	LN:i:G
+S	B0.11	*	LN:i:A
+S	B1.0	*	LN:i:A
+S	B2.1	*	LN:i:C
+S	B2.2	*	LN:i:G
+S	B2.4	*	LN:i:A
+S	B1.6	*	LN:i:G
+S	B1.7	*	LN:i:T
+S	B1.9	*	LN:i:C
+S	B2.8	*	LN:i:AC
+S	B3.2	*	LN:i:GT
+S	B3.9	*	LN:i:C
+S	B3.10	*	LN:i:T
+S	B4.0	*	LN:i:T
+S	B5.0	*	LN:i:T
+S	B5.4	*	LN:i:TT
+L	source	+	B0.0	+	[0]
+L	source	+	B1.0	+	[1, 2, 3]
+L	source	+	B4.0	+	[4]
+L	source	+	B5.0	+	[5]
+L	B0.0	+	B1.3	+	[0]
+L	B1.3	+	B0.4	+	[0]
+L	B1.3	+	B2.4	+	[1, 2, 4]
+L	B1.3	+	B5.4	+	[5]
+L	B0.4	+	B1.5	+	[0]
+L	B1.5	+	B0.6	+	[0]
+L	B1.5	+	B1.6	+	[1, 2, 3, 4]
+L	B0.6	+	B0.8	+	[0]
+L	B0.8	+	B0.9	+	[0, 4]
+L	B0.8	+	B1.9	+	[1]
+L	B0.8	+	B3.9	+	[3]
+L	B0.9	+	B0.10	+	[0]
+L	B0.9	+	B0.11	+	[4]
+L	B0.10	+	B0.11	+	[0, 1]
+L	B0.11	+	sink	+	[0, 1, 2, 4, 5, 3]
+L	B1.0	+	B2.1	+	[1, 2, 3]
+L	B2.1	+	B2.2	+	[1, 2, 4]
+L	B2.1	+	B3.2	+	[3]
+L	B2.2	+	B1.3	+	[1, 2, 4, 5]
+L	B2.4	+	B1.5	+	[1, 2, 3, 4]
+L	B1.6	+	B1.7	+	[1, 2, 3, 4]
+L	B1.7	+	B0.8	+	[1, 3, 4]
+L	B1.7	+	B2.8	+	[2, 5]
+L	B1.9	+	B0.10	+	[1]
+L	B2.8	+	B0.11	+	[5]
+L	B3.2	+	B2.4	+	[3]
+L	B3.9	+	B3.10	+	[3]
+L	B3.10	+	B0.11	+	[3]
+L	B4.0	+	B2.1	+	[4]
+L	B5.0	+	B2.2	+	[5]
+L	B5.4	+	B1.7	+	[5]

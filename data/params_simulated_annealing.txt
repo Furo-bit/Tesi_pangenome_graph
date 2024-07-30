@@ -1,8 +1,10 @@
 [parameters]
-seed=10
+seed=639
 start=unitary_blocks
+limit=5
 threshold=20
 penalization=1000
 temperature=100
 termination_temperature=3
-cooling_factor=0.95
+cooling_factor=0.99
+beta = 0.01

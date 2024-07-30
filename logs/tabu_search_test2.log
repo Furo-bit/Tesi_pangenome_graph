@@ -1,18 +1,18 @@
 	Command being timed: "python tabu_search.py --params data/params_tabu_search.txt --input data/alignments/test2.fa --output output/tabu_search/test2.gfa --quality output/tabu_search/test2_quality.txt"
-	User time (seconds): 0.61
-	System time (seconds): 0.04
-	Percent of CPU this job got: 100%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.65
+	User time (seconds): 1.12
+	System time (seconds): 0.08
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.21
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 69084
+	Maximum resident set size (kbytes): 69072
 	Average resident set size (kbytes): 0
 	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 18454
-	Voluntary context switches: 4
-	Involuntary context switches: 3
+	Minor (reclaiming a frame) page faults: 18484
+	Voluntary context switches: 2
+	Involuntary context switches: 5
 	Swaps: 0
 	File system inputs: 0
 	File system outputs: 16
