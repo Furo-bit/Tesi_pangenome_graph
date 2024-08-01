@@ -18,7 +18,7 @@ import utils
 #----------------------------------------------------------------------------------------
 # Simulated annealing
 
-def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> Tuple[Dict, np.ndarray]:
+def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, sequence_matrix) -> Tuple[Dict, np.ndarray]:
     # Ask user inputs
     seed = int(params['seed'])
     random.seed(seed)
@@ -28,6 +28,8 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
     threshold = int(params['threshold'])
     penalization = int(params['penalization'])
     beta = float(params['beta'])
+    splits_for_cooling = int(params['splits_for_cooling'])
+    operations_for_cooling = [None] * splits_for_cooling
 
     rows = len(block_id_matrix)
     cols = len(block_id_matrix[0])
@@ -205,6 +207,7 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
         if operation_gains != {}:
             operation_gains = dict(sorted(operation_gains.items(), key=lambda item: item[1]))
             operation, gain = next(iter(operation_gains.items()))
+            operations_for_cooling = [operation] + operations_for_cooling[:-1]
             probability = 1
             split_success = False
             if operation == "column_split" or operation == "row_split":
@@ -281,12 +284,18 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
                             block_id_matrix[sequence, column] = block_1["id"]
 
         # Cooling condition
-        if (operation == "column_split" or operation == "row_split") and split_success:
+        if set(operations_for_cooling).issubset({"column_split", "row_split"}):
             temperature = cooling_factor * temperature 
                 
         
         if temperature <= termination_temperature:
             break
+
+        consistency_result, seq_right, seq_wrong = utils.check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix)
+        seq_right = ''.join(seq_right)
+        if consistency_result == False:
+            raise ValueError(f"The last operation did something wrong, the operation was: {operation}") # , right sequence: {seq_right}, wrong sequence: {seq_wrong}
+
 
     return block_dict, block_id_matrix
 
@@ -316,7 +325,7 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
         raise ValueError(f"Unexpected value for start: {start}")
 
     # Simulated annealing
-    block_dict, block_id_matrix = simulated_annealing(block_dict, block_id_matrix, params)
+    block_dict, block_id_matrix = simulated_annealing(block_dict, block_id_matrix, params, sequence_matrix)
     
 
     # Graph

@@ -1,5 +1,0 @@
-[parameters]
-seed=10
-start=greedy_rows
-threshold=20
-penalization=1000

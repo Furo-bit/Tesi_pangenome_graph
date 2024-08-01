@@ -18,6 +18,9 @@ def create_block(id: str, label: str, sequence_id: List[str], begin_column: int,
         "end_column": end_column
     }
     return block_dict
+
+def print_block(block):
+    print(block["id"], block["label"], block["sequence_ids"], block["begin_column"], block["end_column"])
 #----------------------------------------------------------------------------------------
 # Utility functions
 
@@ -257,20 +260,6 @@ def build_graph(block_dict: Dict, block_id_matrix: np.ndarray) -> nx.DiGraph:
         else:
             pos[node] = (data['col'], -data['row'])  # Invert row value for upward display
     
-    '''
-    # Add edges
-    for i in range(rows):
-        G.add_edge("source", block_id_matrix[i, 0], label=block_dict[block_id_matrix[i, 0]]["sequence_ids"])
-        G.add_edge(block_id_matrix[i, cols-1], "sink", label=block_dict[block_id_matrix[i, cols-1]]["sequence_ids"])
-        for j in range(cols - 1):
-            current_block_id = block_id_matrix[i, j]
-            next_block_id = block_id_matrix[i, j+1]
-            if current_block_id != next_block_id:
-                current_block = block_dict[current_block_id]
-                next_block = block_dict[next_block_id]
-                common_sequences = list(set(current_block["sequence_ids"]).intersection(set(next_block["sequence_ids"])))
-                G.add_edge(current_block_id, next_block_id, label=common_sequences)
-    '''
 
     # Add edges
     # normal edges
@@ -352,6 +341,23 @@ def remove_indle_from_graph(graph: nx.DiGraph) -> nx.DiGraph:
     graph.remove_nodes_from(nodes_without_data)
 
     return graph
+
+def check_id_matrix_consistency(block_id_matrix: np.ndarray, block_dict: Dict, sequence_matrix: List[List[str]]) -> bool:
+    rows = len(block_id_matrix)
+    cols = len(block_id_matrix[0])
+    for row in range(rows):
+        sequence = ""
+        previous_id = "none"
+        for col in range(cols):
+            current_block = block_dict[block_id_matrix[row, col]]
+            if current_block["id"] != previous_id:
+                sequence = sequence + current_block["label"]
+                previous_id = current_block["id"]
+        if ''.join(sequence_matrix[row]) != sequence:
+            return False, sequence_matrix[row], sequence
+    return True, "", ""
+
+
 #----------------------------------------------------------------------------------------
 # Objective functions
 

@@ -18,7 +18,7 @@ import utils
 #----------------------------------------------------------------------------------------
 # Tabu search
 
-def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> Tuple[Dict, np.ndarray]:
+def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, sequence_matrix) -> Tuple[Dict, np.ndarray]:
 
     threshold = int(params['threshold'])
     penalization = int(params['penalization'])
@@ -57,10 +57,11 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> 
             # Check the column for merge
             for row in range(rows):
                 block_2 = block_dict[block_id_matrix[row, col_index]] 
-                if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_vertical and block_2["id"] not in tabu_dict:
+                if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_vertical:
                     if (block_1["begin_column"] == block_2["begin_column"] and
                         block_1["end_column"] == block_2["end_column"] and
-                        block_1["label"] == block_2["label"]):
+                        block_1["label"] == block_2["label"] and 
+                        block_2["id"] not in tabu_dict):
                         list_mergeable_vertical += [block_2["id"]]
             
             # Check for greedy column merge
@@ -120,10 +121,11 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> 
                 limit_left = 0
             else:
                 limit_left = block_1["begin_column"] - limit
+           
             for column in reversed(range(limit_left, block_1["begin_column"])):
                 block_2 = block_dict[block_id_matrix[row_index, column]] 
-                if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_left and block_2["id"] not in tabu_dict:
-                    if block_1["sequence_ids"] == block_2["sequence_ids"]:
+                if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_left :
+                    if block_1["sequence_ids"] == block_2["sequence_ids"] and block_2["id"] not in tabu_dict:
                         list_mergeable_horizontal_left += [block_2["id"]]
                     else:
                         break
@@ -136,8 +138,8 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> 
                 limit_right = block_1["end_column"] + limit
             for column in range(block_1["end_column"], limit_right):
                 block_2 = block_dict[block_id_matrix[row_index, column]] 
-                if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_right and block_2["id"] not in tabu_dict:
-                    if block_1["sequence_ids"] == block_2["sequence_ids"]:
+                if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_right:
+                    if block_1["sequence_ids"] == block_2["sequence_ids"] and block_2["id"] not in tabu_dict:
                         list_mergeable_horizontal_right += [block_2["id"]]
                     else:
                         break
@@ -156,7 +158,6 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> 
                         block_2_label_value = utils.of_pangeblocks(threshold, penalization, len(block_2_label))    
                         horizontal_merge_gain += block_2_label_value
                         new_block_horizontal = utils.merge_two_blocks(new_block_horizontal, block_2, "column_union")
-
                 new_block_horizontal_label = new_block_horizontal["label"]
                 new_block_horizontal_label = new_block_horizontal_label.translate(str.maketrans("", "", "-"))
                 new_block_horizontal_label_value = utils.of_pangeblocks(threshold, penalization, len(new_block_horizontal_label))    
@@ -287,6 +288,12 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict) -> 
 
         for block in blocks_to_delete:
             del tabu_dict[block]
+        
+        consistency_result, seq_right, seq_wrong = utils.check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix)
+        seq_right = ''.join(seq_right)
+        if consistency_result == False:
+            raise ValueError(f"The last operation did something wrong, the operation was: {operation}") #, right sequence: {seq_right}, wrong sequence: {seq_wrong}
+
 
     return block_dict, block_id_matrix
 
@@ -296,7 +303,6 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
 
     # Reading the MSA
     sequences = utils.read_fasta(alignment_file) 
-
     # Convert sequences to matrix
     sequence_matrix = utils.sequences_to_matrix(sequences)    
     
@@ -317,7 +323,7 @@ def main(params_file: str, alignment_file: str, output_file: str, quality_file: 
 
     
     # Tabu search
-    block_dict, block_id_matrix = tabu_search(block_dict, block_id_matrix, params)
+    block_dict, block_id_matrix = tabu_search(block_dict, block_id_matrix, params, sequence_matrix)
 
     # Graph
     graph, pos = utils.build_graph(block_dict, block_id_matrix)

@@ -1,6 +1,6 @@
 [parameters]
 seed=639
 start=unitary_blocks
-limit=5
+limit=10
 threshold=20
 penalization=1000
