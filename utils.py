@@ -134,7 +134,7 @@ def merge_two_blocks(block_1: Dict, block_2: Dict, how: str) -> Dict:
     return new_block
 
 # Split one block in two by column
-def split_block_by_column(block: Dict) -> Tuple[Dict, Dict]:
+def split_block_by_column(block: Dict, split_number: int) -> Tuple[Dict, Dict]:
     label = block["label"]
     begin_column = block["begin_column"]
     end_column = block["end_column"]
@@ -145,8 +145,20 @@ def split_block_by_column(block: Dict) -> Tuple[Dict, Dict]:
     # Choose a random split point ensuring both parts are non-empty
     split_point = random.randint(begin_column + 1, end_column)
     
+    if '_' in block["id"]:
+        # Trova l'indice dell'underscore
+        underscore_index = block["id"].index('_')
+        # Crea la nuova stringa
+        id1 = block["id"][:underscore_index + 1] + str(split_number)
+        id2 = block["id"][:underscore_index + 1] + str(split_number+1)
+
+    else:
+        # Se non c'è un underscore, aggiungilo con il nuovo numero
+        id1 = block["id"] + '_' + str(split_number)
+        id2 = block["id"] + '_' + str(split_number+1)
+
     part1 = {
-        "id": block["id"] + "_1",
+        "id": id1,
         "label": label[:split_point - begin_column],
         "sequence_ids": block["sequence_ids"],
         "begin_column": begin_column,
@@ -154,7 +166,7 @@ def split_block_by_column(block: Dict) -> Tuple[Dict, Dict]:
     }
     
     part2 = {
-        "id": block["id"] + "_2",
+        "id": id2,
         "label": label[split_point - begin_column:],
         "sequence_ids": block["sequence_ids"],
         "begin_column": split_point,
@@ -164,7 +176,7 @@ def split_block_by_column(block: Dict) -> Tuple[Dict, Dict]:
     return part1, part2
 
 # Split one block in two by row
-def split_block_by_row(block: Dict) -> Tuple[Dict, Dict]:
+def split_block_by_row(block: Dict, split_number: int) -> Tuple[Dict, Dict]:
     sequence_ids = block["sequence_ids"]
     
     if len(sequence_ids) <= 1:
@@ -173,8 +185,22 @@ def split_block_by_row(block: Dict) -> Tuple[Dict, Dict]:
     # Choose a random split point ensuring both parts are non-empty
     split_point = random.randint(1, len(sequence_ids) - 1)
     
+    
+    if '_' in block["id"]:
+        # Trova l'indice dell'underscore
+        underscore_index = block["id"].index('_')
+        # Crea la nuova stringa
+        id1 = block["id"][:underscore_index + 1] + str(split_number)
+        id2 = block["id"][:underscore_index + 1] + str(split_number+1)
+
+    else:
+        # Se non c'è un underscore, aggiungilo con il nuovo numero
+        id1 = block["id"] + '_' + str(split_number)
+        id2 = block["id"] + '_' + str(split_number+1)
+
+
     part1 = {
-        "id": block["id"] + "_1",
+        "id": id1,
         "label": block["label"],
         "sequence_ids": sequence_ids[:split_point],
         "begin_column": block["begin_column"],
@@ -182,7 +208,7 @@ def split_block_by_row(block: Dict) -> Tuple[Dict, Dict]:
     }
     
     part2 = {
-        "id": block["id"] + "_2",
+        "id": id2,
         "label": block["label"],
         "sequence_ids": sequence_ids[split_point:],
         "begin_column": block["begin_column"],

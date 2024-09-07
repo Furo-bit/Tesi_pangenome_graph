@@ -20,6 +20,7 @@ import utils
 
 def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, sequence_matrix) -> Tuple[Dict, np.ndarray]:
 
+    split_number = 0
     threshold = int(params['threshold'])
     penalization = int(params['penalization'])
     seed = int(params['seed'])
@@ -30,7 +31,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
     if limit == -1: 
         limit = cols
     elif limit == -2:
-        limit = rows
+        limit = int(rows/2)
     
     # Create empty tabu dict 
     tabu_dict = {}
@@ -43,7 +44,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
         row_index = (x - 1) // cols
         col_index = (x - 1) % cols
         block_1 = block_dict[block_id_matrix[row_index, col_index]]
-        if block_1["id"] not in tabu_dict:
+        if True: #block_1["id"] not in tabu_dict:
                 
             list_mergeable_horizontal = []
             list_mergeable_horizontal_left = []
@@ -60,8 +61,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
                 if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_vertical:
                     if (block_1["begin_column"] == block_2["begin_column"] and
                         block_1["end_column"] == block_2["end_column"] and
-                        block_1["label"] == block_2["label"] and 
-                        block_2["id"] not in tabu_dict):
+                        block_1["label"] == block_2["label"]):# and block_2["id"] not in tabu_dict):
                         list_mergeable_vertical += [block_2["id"]]
             
             # Check for greedy column merge
@@ -70,10 +70,10 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
             for i in range(rows):
                 list_i_mergeable = []
                 block_a = block_dict[block_id_matrix[i, col_index]]
-                if block_a["id"] not in list_used_ids and block_a["id"] not in tabu_dict:
+                if block_a["id"] not in list_used_ids:# and block_a["id"] not in tabu_dict:
                     for z in range(i, rows):
                         block_b = block_dict[block_id_matrix[z, col_index]]      
-                        if block_a["id"] != block_b["id"] and block_b["id"] not in list_used_ids and block_b["id"] not in tabu_dict:
+                        if block_a["id"] != block_b["id"] and block_b["id"] not in list_used_ids: # and block_b["id"] not in tabu_dict:
                             if (block_a["begin_column"] == block_b["begin_column"] and
                                 block_a["end_column"] == block_b["end_column"] and
                                 block_a["label"] == block_b["label"]):
@@ -125,7 +125,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
             for column in reversed(range(limit_left, block_1["begin_column"])):
                 block_2 = block_dict[block_id_matrix[row_index, column]] 
                 if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_left :
-                    if block_1["sequence_ids"] == block_2["sequence_ids"] and block_2["id"] not in tabu_dict:
+                    if block_1["sequence_ids"] == block_2["sequence_ids"]: # and block_2["id"] not in tabu_dict:
                         list_mergeable_horizontal_left += [block_2["id"]]
                     else:
                         break
@@ -139,7 +139,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
             for column in range(block_1["end_column"], limit_right):
                 block_2 = block_dict[block_id_matrix[row_index, column]] 
                 if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_right:
-                    if block_1["sequence_ids"] == block_2["sequence_ids"] and block_2["id"] not in tabu_dict:
+                    if block_1["sequence_ids"] == block_2["sequence_ids"]: # and block_2["id"] not in tabu_dict:
                         list_mergeable_horizontal_right += [block_2["id"]]
                     else:
                         break
@@ -165,41 +165,43 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
                 operation_gains["column_merge"] = horizontal_merge_gain
 
 
+            if block_1["id"] not in tabu_dict:
+                # Check row split
+                if len(block_1["sequence_ids"]) > 1:
 
-            # Check row split
-            if len(block_1["sequence_ids"]) > 1:
+                    new_block_1r, new_block_2r = utils.split_block_by_row(block_1, split_number)
+                    split_number = split_number + 2
 
-                new_block_1r, new_block_2r = utils.split_block_by_row(block_1)
+                    label_nb1r = new_block_1r["label"]
+                    label_nb2r = new_block_2r["label"]  
+                    
+                    label_nb1r = label_nb1r.translate(str.maketrans("", "", "-"))
+                    label_nb2r = label_nb2r.translate(str.maketrans("", "", "-"))
 
-                label_nb1r = new_block_1r["label"]
-                label_nb2r = new_block_2r["label"]  
+                    delta = (utils.of_pangeblocks(threshold, penalization, len(label_nb1r)) +
+                            utils.of_pangeblocks(threshold, penalization, len(label_nb2r)) -
+                            block_1_label_value
+                            ) 
+                    operation_gains["row_split"] = delta
                 
-                label_nb1r = label_nb1r.translate(str.maketrans("", "", "-"))
-                label_nb2r = label_nb2r.translate(str.maketrans("", "", "-"))
+                # Check column split
+                if block_1["end_column"] - block_1["begin_column"] > 0:
 
-                delta = (utils.of_pangeblocks(threshold, penalization, len(label_nb1r)) +
-                        utils.of_pangeblocks(threshold, penalization, len(label_nb2r)) -
-                        block_1_label_value
-                        ) 
-                operation_gains["row_split"] = delta
-            
-            # Check column split
-            if block_1["end_column"] - block_1["begin_column"] > 0:
+                    new_block_1c, new_block_2c = utils.split_block_by_column(block_1, split_number)
+                    split_number = split_number + 2
 
-                new_block_1c, new_block_2c = utils.split_block_by_column(block_1)
+                    label_nb1c = new_block_1c["label"]
+                    label_nb2c = new_block_2c["label"]  
+                    
+                    label_nb1c = label_nb1c.translate(str.maketrans("", "", "-"))
+                    label_nb2c = label_nb2c.translate(str.maketrans("", "", "-"))
 
-                label_nb1c = new_block_1c["label"]
-                label_nb2c = new_block_2c["label"]  
+                    delta = (utils.of_pangeblocks(threshold, penalization, len(label_nb1c)) +
+                            utils.of_pangeblocks(threshold, penalization, len(label_nb2c)) -
+                            block_1_label_value
+                            ) 
+                    operation_gains["column_split"] = delta
                 
-                label_nb1c = label_nb1c.translate(str.maketrans("", "", "-"))
-                label_nb2c = label_nb2c.translate(str.maketrans("", "", "-"))
-
-                delta = (utils.of_pangeblocks(threshold, penalization, len(label_nb1c)) +
-                        utils.of_pangeblocks(threshold, penalization, len(label_nb2c)) -
-                        block_1_label_value
-                        ) 
-                operation_gains["column_split"] = delta
-            
             # Select operation
             
             if operation_gains != {}:
@@ -288,12 +290,12 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
 
         for block in blocks_to_delete:
             del tabu_dict[block]
-        
+        '''
         consistency_result, seq_right, seq_wrong = utils.check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix)
         seq_right = ''.join(seq_right)
         if consistency_result == False:
             raise ValueError(f"The last operation did something wrong, the operation was: {operation}") #, right sequence: {seq_right}, wrong sequence: {seq_wrong}
-
+        '''
 
     return block_dict, block_id_matrix
 

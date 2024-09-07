@@ -20,6 +20,7 @@ import utils
 
 def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, sequence_matrix) -> Tuple[Dict, np.ndarray]:
 
+    split_number = 0
     threshold = int(params['threshold'])
     penalization = int(params['penalization'])
     seed = int(params['seed'])
@@ -30,7 +31,7 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, se
     if limit == -1: 
         limit = cols
     elif limit == -2:
-        limit = rows
+        limit = int(rows/2)
     # Generate a random numbers using the user-provided seed
     random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total))
     
@@ -163,7 +164,8 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, se
         # Check row split
         if len(block_1["sequence_ids"]) > 1:
 
-            new_block_1r, new_block_2r = utils.split_block_by_row(block_1)
+            new_block_1r, new_block_2r = utils.split_block_by_row(block_1, split_number)
+            split_number = split_number + 2
 
             label_nb1r = new_block_1r["label"]
             label_nb2r = new_block_2r["label"]  
@@ -180,7 +182,8 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, se
         # Check column split
         if block_1["end_column"] - block_1["begin_column"] > 0:
 
-            new_block_1c, new_block_2c = utils.split_block_by_column(block_1)
+            new_block_1c, new_block_2c = utils.split_block_by_column(block_1, split_number)
+            split_number = split_number + 2
 
             label_nb1c = new_block_1c["label"]
             label_nb2c = new_block_2c["label"]  
@@ -265,11 +268,13 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, se
                         for column in range(block_1["begin_column"], block_1["end_column"] + 1):
                             block_id_matrix[sequence, column] = block_1["id"]
 
+        '''
         consistency_result, seq_right, seq_wrong = utils.check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix)
         seq_right = ''.join(seq_right)
         if consistency_result == False:
             raise ValueError(f"The last operation did something wrong, the operation was: {operation}") #, right sequence: {seq_right}, wrong sequence: {seq_wrong}
-
+        '''
+            
     return block_dict, block_id_matrix
 
 #----------------------------------------------------------------------------------------

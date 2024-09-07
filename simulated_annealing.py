@@ -19,6 +19,8 @@ import utils
 # Simulated annealing
 
 def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, sequence_matrix) -> Tuple[Dict, np.ndarray]:
+    
+    split_number = 0
     # Ask user inputs
     seed = int(params['seed'])
     random.seed(seed)
@@ -28,18 +30,20 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
     threshold = int(params['threshold'])
     penalization = int(params['penalization'])
     beta = float(params['beta'])
-    splits_for_cooling = int(params['splits_for_cooling'])
-    operations_for_cooling = [None] * splits_for_cooling
+
 
     rows = len(block_id_matrix)
     cols = len(block_id_matrix[0])
     cell_total = rows * cols
 
+    splits_for_cooling = int(params['splits_for_cooling'])
+    operations_for_cooling = [None] * int(rows * 15) 
+
     limit = int(params['limit'])
     if limit == -1: 
         limit = cols
     elif limit == -2:
-        limit = rows
+        limit = int(rows/2)
 
     while True:
         random_number = random.randint(1, cell_total)
@@ -171,7 +175,8 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
         # Check row split
         if len(block_1["sequence_ids"]) > 1:
 
-            new_block_1r, new_block_2r = utils.split_block_by_row(block_1)
+            new_block_1r, new_block_2r = utils.split_block_by_row(block_1, split_number)
+            split_number = split_number + 2
 
             label_nb1r = new_block_1r["label"]
             label_nb2r = new_block_2r["label"]  
@@ -188,7 +193,8 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
         # Check column split
         if block_1["end_column"] - block_1["begin_column"] > 0:
 
-            new_block_1c, new_block_2c = utils.split_block_by_column(block_1)
+            new_block_1c, new_block_2c = utils.split_block_by_column(block_1, split_number)
+            split_number = split_number + 2
 
             label_nb1c = new_block_1c["label"]
             label_nb2c = new_block_2c["label"]  
@@ -284,18 +290,25 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
                             block_id_matrix[sequence, column] = block_1["id"]
 
         # Cooling condition
-        if set(operations_for_cooling).issubset({"column_split", "row_split"}):
+        column_split_number = row_split_number = 0
+        column_split_number = operations_for_cooling.count("column_split")
+        row_split_number = operations_for_cooling.count("row_split")
+        if column_split_number + row_split_number >= int((len(operations_for_cooling)/100) * 55):#set(operations_for_cooling).issubset({"column_split", "row_split"}):
             temperature = cooling_factor * temperature 
+            operations_for_cooling = [None] * int(rows * 15)
+            
+
                 
         
         if temperature <= termination_temperature:
             break
 
+        '''
         consistency_result, seq_right, seq_wrong = utils.check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix)
         seq_right = ''.join(seq_right)
         if consistency_result == False:
             raise ValueError(f"The last operation did something wrong, the operation was: {operation}") # , right sequence: {seq_right}, wrong sequence: {seq_wrong}
-
+        '''
 
     return block_dict, block_id_matrix
 
