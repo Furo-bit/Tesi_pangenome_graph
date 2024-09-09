@@ -6,8 +6,11 @@
 #include <iomanip>
 #include <algorithm>
 #include <stdexcept>
+#include <cmath>
+#include <random>
 
 using namespace std;
+
 
 // Definizione della struttura Block
 struct Block {
@@ -163,51 +166,226 @@ Block merge_two_blocks(const Block& block_1, const Block& block_2, const string&
     return new_block;
 }
 
-int main() {
-    // Leggi le sequenze dal file FASTA
-    const string filename = "test.fa";
-    auto sequences = read_fasta(filename);
-
-    // Converti le sequenze in una matrice
-    auto sequence_matrix = sequences_to_matrix(sequences);
-
-    // Costruisci i blocchi e la matrice degli ID dei blocchi
-    auto [block_dict, block_id_matrix] = build_blocks_from_sequence_matrix(sequence_matrix);
-
-    // Ordina i blocchi per sequence_id
-    auto sorted_blocks = sort_blocks_by_sequence_id(block_dict);
-
-    // Stampa dei blocchi ordinati
-    cout << "Blocks (sorted by Sequence ID):" << endl;
-    for (const auto& block : sorted_blocks) {
-        print_block(block);
-    }
+// Funzione aggiornata per eliminare i blocchi id1 e id2 e aggiungere il nuovo blocco
+unordered_map<string, Block> update_block_dict_with_same_id(
+    unordered_map<string, Block>& block_dict, const Block& new_block, const string& id1, const string& id2) {
     
-    // Stampa della matrice degli ID dei blocchi
-    cout << "Block ID Matrix:" << endl;
+    // Elimina i blocchi con ID id1 e id2
+    block_dict.erase(id1);
+    block_dict.erase(id2);
+    
+    // Aggiungi il nuovo blocco al dizionario
+    block_dict[new_block.id] = new_block;
+    
+    return block_dict;
+}
+
+void update_block_submatrix_with_same_id(vector<vector<string>>& block_id_matrix, 
+                                         const string& new_id, 
+                                         const vector<int>& sequences, 
+                                         int first_column, 
+                                         int last_column) {
+    // Aggiorna gli ID dei blocchi nelle righe specificate e nelle colonne comprese tra first_column e last_column
+    for (int sequence : sequences) {
+        for (int column = first_column; column <= last_column; ++column) {
+            block_id_matrix[sequence][column] = new_id;
+        }
+    }
+}
+
+double acceptance_probability(double delta, double temperature, double beta) {
+    return std::exp(-beta * delta / temperature);
+}
+
+// Genera una lista di numeri casuali
+vector<int> generate_random_numbers(int seed, int start, int end, int count) {
+    vector<int> random_numbers;
+    mt19937 generator(seed);  // Generatore di numeri casuali con seme
+    uniform_int_distribution<int> distribution(start, end);  // Distribuzione uniforme tra start e end
+
+    for (int i = 0; i < count; ++i) {
+        random_numbers.push_back(distribution(generator));
+    }
+
+    return random_numbers;
+}
+
+// Genera un singolo numero casuale, se rifatto con gli stessi parametri dà lo stesso risultato
+int generate_random_number(int seed, int start, int end) {
+    mt19937 generator(seed);  // Generatore di numeri casuali con seme
+    uniform_int_distribution<int> distribution(start, end);  // Distribuzione uniforme tra start e end
+    return distribution(generator);
+}
+
+// Funzione per dividere un blocco per riga
+tuple<Block, Block> split_block_by_row(const Block& block, int split_number) {
+    const vector<int>& sequence_ids = block.sequence_ids;
+
+    if (sequence_ids.size() <= 1) {
+        throw invalid_argument("Block must contain at least two sequence IDs to be split.");
+    }
+
+    // Generatore di numeri casuali per il punto di divisione
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> dist(1, sequence_ids.size() - 1);
+    int split_point = dist(gen);
+
+    // Creazione dei nuovi ID dei blocchi
+    string id1, id2;
+    size_t underscore_index = block.id.find('_');
+
+    if (underscore_index != string::npos) {
+        id1 = block.id.substr(0, underscore_index + 1) + to_string(split_number);
+        id2 = block.id.substr(0, underscore_index + 1) + to_string(split_number + 1);
+    } else {
+        id1 = block.id + '_' + to_string(split_number);
+        id2 = block.id + '_' + to_string(split_number + 1);
+    }
+
+    // Creazione dei due nuovi blocchi
+    Block part1 = {
+        id1,
+        block.label,
+        vector<int>(sequence_ids.begin(), sequence_ids.begin() + split_point),
+        block.begin_column,
+        block.end_column
+    };
+
+    Block part2 = {
+        id2,
+        block.label,
+        vector<int>(sequence_ids.begin() + split_point, sequence_ids.end()),
+        block.begin_column,
+        block.end_column
+    };
+
+    return make_tuple(part1, part2);
+}
+
+
+// Funzione per dividere un blocco per colonna
+tuple<Block, Block> split_block_by_column(const Block& block, int split_number) {
+    const string& label = block.label;
+    int begin_column = block.begin_column;
+    int end_column = block.end_column;
+
+    if (end_column - begin_column <= 0) {
+        throw invalid_argument("Block must span at least two columns to be split.");
+    }
+
+    // Generatore di numeri casuali per il punto di divisione
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> dist(begin_column + 1, end_column);
+    int split_point = dist(gen);
+
+    // Creazione dei nuovi ID dei blocchi
+    string id1, id2;
+    size_t underscore_index = block.id.find('_');
+
+    if (underscore_index != string::npos) {
+        id1 = block.id.substr(0, underscore_index + 1) + to_string(split_number);
+        id2 = block.id.substr(0, underscore_index + 1) + to_string(split_number + 1);
+    } else {
+        id1 = block.id + '_' + to_string(split_number);
+        id2 = block.id + '_' + to_string(split_number + 1);
+    }
+
+    // Creazione dei due nuovi blocchi
+    Block part1 = {
+        id1,
+        label.substr(0, split_point - begin_column),
+        block.sequence_ids,
+        begin_column,
+        split_point - 1
+    };
+
+    Block part2 = {
+        id2,
+        label.substr(split_point - begin_column),
+        block.sequence_ids,
+        split_point,
+        end_column
+    };
+
+    return make_tuple(part1, part2);
+}
+
+
+unordered_map<string, Block> greedy_row_merge(unordered_map<string, Block>& block_dict, vector<vector<string>>& block_id_matrix) {
+    size_t num_seq = block_id_matrix.size();
+    size_t num_bases = block_id_matrix[0].size();
+
+    for (size_t i = 0; i < num_seq; ++i) {
+        for (size_t j = 0; j < num_bases; ++j) {
+            for (size_t z = 0; z < num_seq; ++z) {
+                string id_1 = block_id_matrix[i][j];
+                string id_2 = block_id_matrix[z][j];
+
+                if (id_1 != id_2 && block_dict[id_1].label == block_dict[id_2].label) {
+                    Block& block_1 = block_dict[id_1];
+                    Block& block_2 = block_dict[id_2];
+                    
+                    Block new_block;
+                    if (z < i) {
+                        new_block = merge_two_blocks(block_2, block_1, "row_union");
+                        block_dict = update_block_dict_with_same_id(block_dict, new_block, block_2.id, block_1.id);
+                    } else {
+                        new_block = merge_two_blocks(block_1, block_2, "row_union");
+                        block_dict = update_block_dict_with_same_id(block_dict, new_block, block_1.id, block_2.id);
+                    }
+
+                    for (int sequence : new_block.sequence_ids) {
+                        for (int column = new_block.begin_column; column <= new_block.end_column; ++column) {
+                            block_id_matrix[sequence][column] = new_block.id;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return block_dict;
+}
+
+
+int main() {
+    // Creazione di un dizionario di blocchi e una matrice di test
+    unordered_map<string, Block> block_dict = {
+        {"B0.0", {"B0.0", "A", {0}, 0, 0}},
+        {"B1.0", {"B1.0", "A", {1}, 0, 0}},
+        {"B2.0", {"B2.0", "A", {2}, 0, 0}},
+        {"B0.1", {"B0.1", "T", {0}, 1, 1}},
+        {"B1.1", {"B1.1", "T", {1}, 1, 1}},
+        {"B2.1", {"B2.1", "T", {2}, 1, 1}}
+    };
+
+    // Matrice di ID blocco
+    vector<vector<string>> block_id_matrix = {
+        {"B0.0", "B0.1"},
+        {"B1.0", "B1.1"},
+        {"B2.0", "B2.1"}
+    };
+
+    // Test della funzione greedy_row_merge
+    block_dict = greedy_row_merge(block_dict, block_id_matrix);
+
+    // Stampa dei risultati
+    cout << "Block ID Matrix after row merge:\n";
     for (const auto& row : block_id_matrix) {
         for (const auto& id : row) {
-            cout << setw(10) << id; // Format per l'allineamento
+            cout << id << " ";
         }
         cout << endl;
     }
 
-    // Test della funzione di unione dei blocchi
-    if (sorted_blocks.size() > 1) {
-        Block block_1 = sorted_blocks[0];
-        Block block_2 = sorted_blocks[1];
-        string how = "column_union"; // o "row_union"
-        
-        try {
-            Block merged_block = merge_two_blocks(block_1, block_2, how);
-            cout << "Merged Block:" << endl;
-            print_block(merged_block);
-        } catch (const invalid_argument& e) {
-            cerr << "Errore: " << e.what() << endl;
-        }
-    } else {
-        cout << "Non ci sono abbastanza blocchi per eseguire l'unione." << endl;
+    // Stampa dei blocchi dopo il merge
+    cout << "\nBlocks after row merge:\n";
+    for (const auto& pair : block_dict) {
+        print_block(pair.second);
     }
+
 
     return 0;
 }
