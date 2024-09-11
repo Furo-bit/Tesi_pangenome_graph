@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <cmath>
 #include <random>
+#include <graphviz/gvc.h>
+#include <graphviz/cgraph.h> 
 
 using namespace std;
 
@@ -349,6 +351,232 @@ unordered_map<string, Block> greedy_row_merge(unordered_map<string, Block>& bloc
     return block_dict;
 }
 
+int of_min_label_length_threshold(int threshold, int penalization, int label_length) {
+    if (label_length < threshold) {
+        return penalization * (threshold - label_length);
+    } else {
+        return 1;
+    }
+}
+
+int of_pangeblocks(int threshold, int penalization, int label_length) {
+    if (label_length < threshold) {
+        return penalization;
+    } else {
+        return 1;
+    }
+}
+
+bool check_number_in_string(int number, const string& str) {
+    stringstream ss(str);
+    string item;
+    
+    while (getline(ss, item, ',')) {
+        if (to_string(number) == item) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool check_id_matrix_consistency(const vector<vector<string>>& block_id_matrix, 
+                                 const unordered_map<string, Block>& block_dict, 
+                                 const vector<vector<char>>& sequence_matrix) {
+    size_t rows = block_id_matrix.size();
+    size_t cols = block_id_matrix[0].size();
+
+    for (size_t row = 0; row < rows; ++row) {
+        string sequence = "";
+        string previous_id = "none";
+
+        for (size_t col = 0; col < cols; ++col) {
+            const Block& current_block = block_dict.at(block_id_matrix[row][col]);
+
+            if (current_block.id != previous_id) {
+                sequence += current_block.label;
+                previous_id = current_block.id;
+            }
+        }
+
+        // Verifica se la sequenza generata corrisponde alla sequenza nella matrice
+        string original_sequence(sequence_matrix[row].begin(), sequence_matrix[row].end());
+        if (original_sequence != sequence) {
+            cout << "Inconsistency found in row: " << row << endl;
+            cout << "Expected sequence: " << original_sequence << endl;
+            cout << "Generated sequence: " << sequence << endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+
+// Funzione di utilità per convertire std::string in char*
+char* toCharPointer(const string& str) {
+    return const_cast<char*>(str.c_str());
+}
+
+
+
+
+// Funzione per costruire il grafo
+Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vector<vector<string>>& block_id_matrix) {
+    // Crea un contesto Graphviz
+    GVC_t *gvc = gvContext();
+    // Crea un grafo diretto
+    Agraph_t *g = agopen(const_cast<char*>("G"), Agdirected, NULL);
+
+    // Aggiungi i nodi
+    // source e sink
+    string label_name = "label";
+    string source_name = "Source";
+    Agnode_t *source = agnode(g, const_cast<char*>(source_name.c_str()), true);
+    agset(source, const_cast<char*>(label_name.c_str()), const_cast<char*>(source_name.c_str()));
+    string sink_name = "Sink";
+    Agnode_t *sink = agnode(g, const_cast<char*>(sink_name.c_str()), true);
+    agset(sink, const_cast<char*>(label_name.c_str()), const_cast<char*>(sink_name.c_str()));
+
+    // nodi dal dizionario
+    for (const auto& pair : block_dict) {
+        //ogni nodo deve avere ID che sarà il nome, label che sarà la label ma tolta degli indel
+        const string& block_id = pair.first;
+        const Block& block = pair.second;
+        Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), TRUE);
+        agset(node, const_cast<char*>("label"), const_cast<char*>(block.label.c_str()));
+    }
+
+    size_t rows = block_id_matrix.size();
+    size_t cols = block_id_matrix[0].size();
+
+    // Archi di source
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = 0; col < cols - 1; ++col) {
+            string block_id = block_id_matrix[row][col];
+            const Block& block = block_dict.at(block_id);
+            if (!all_of(block.label.begin(), block.label.end(), [](char c) { return c == '-'; })) {
+                 
+                // Trova il nodo per block_2_id
+                Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), false);
+                
+                // Crea o trova l'arco tra node_1 e node_2
+                Agedge_t* e = agedge(g, source, node, nullptr, TRUE);
+                
+                string label = to_string(row);
+                if (e != nullptr) {
+                
+                    // Verifica se esiste già l'etichetta
+                    char* label_ptr = agget(e, const_cast<char*>("label"));
+                    if (label_ptr != nullptr) {
+                        string existing_labels(label_ptr);  // Costruisce la stringa solo se label_ptr non è nullo
+                        if (!existing_labels.empty() && !check_number_in_string(row, existing_labels)) {
+                            label = existing_labels + "," + to_string(row);
+                        }
+                    }
+                
+                    // Crea una copia della stringa per passare a agset
+                    agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
+                
+               
+                }
+                break;
+            }
+        }
+    }
+
+    // Archi di sink 
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = cols - 1; col >= 0; --col) {
+            string block_id = block_id_matrix[row][col];
+            const Block& block = block_dict.at(block_id);
+            if (!all_of(block.label.begin(), block.label.end(), [](char c) { return c == '-'; })) {
+                 
+                // Trova il nodo per block_2_id
+                Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), false);
+                
+                // Crea o trova l'arco tra node_1 e node_2
+                Agedge_t* e = agedge(g, node, sink, nullptr, TRUE);
+                
+                string label = to_string(row);
+                if (e != nullptr) {
+                
+                    // Verifica se esiste già l'etichetta
+                    char* label_ptr = agget(e, const_cast<char*>("label"));
+                    if (label_ptr != nullptr) {
+                        string existing_labels(label_ptr);  // Costruisce la stringa solo se label_ptr non è nullo
+                        if (!existing_labels.empty() && !check_number_in_string(row, existing_labels)) {
+                            label = existing_labels + "," + to_string(row);
+                        }
+                    }
+                
+                    // Crea una copia della stringa per passare a agset
+                    agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
+                
+                
+                }
+            break;
+            }
+        }
+    }
+
+
+    // Aggiungi gli archi normali
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = 0; col < cols - 1; ++col) {
+            string block_1_id = block_id_matrix[row][col];
+            const Block& block_1 = block_dict.at(block_1_id);
+            if (!all_of(block_1.label.begin(), block_1.label.end(), [](char c) { return c == '-'; })) {
+                for (size_t col2 = col + 1; col2 < cols; ++col2) {
+                    string block_2_id = block_id_matrix[row][col2];
+                    const Block& block_2 = block_dict.at(block_2_id);
+                    if (!all_of(block_2.label.begin(), block_2.label.end(), [](char c) { return c == '-'; }) && block_1_id != block_2_id) {
+                        
+                        // Trova il nodo per block_1_id
+                        Agnode_t* node_1 = agnode(g, const_cast<char*>(block_1_id.c_str()), false);
+                        
+                        // Trova il nodo per block_2_id
+                        Agnode_t* node_2 = agnode(g, const_cast<char*>(block_2_id.c_str()), false);
+                        
+                        // Crea o trova l'arco tra node_1 e node_2
+                        Agedge_t* e = agedge(g, node_1, node_2, nullptr, TRUE);
+                        
+                        string label = to_string(row);
+                        if (e != nullptr) {
+                        
+                            // Verifica se esiste già l'etichetta
+                            char* label_ptr = agget(e, const_cast<char*>("label"));
+                            if (label_ptr != nullptr) {
+                                string existing_labels(label_ptr);  // Costruisce la stringa solo se label_ptr non è nullo
+                                if (!existing_labels.empty() && !check_number_in_string(row, existing_labels)) {
+                                    label = existing_labels + "," + to_string(row);
+                                }
+                            }
+                        
+                            // Crea una copia della stringa per passare a agset
+                            agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
+                        
+                        
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+    // Genera layout e renderizza il grafo
+    gvLayout(gvc, g, "dot");
+    gvRenderFilename(gvc, g, "png", "graph.png");
+    gvFreeLayout(gvc, g);
+
+    // Libera il contesto Graphviz
+    gvFreeContext(gvc);
+
+    return g;
+}
 
 int main() {
     // Creazione di un dizionario di blocchi e una matrice di test
@@ -358,34 +586,22 @@ int main() {
         {"B2.0", {"B2.0", "A", {2}, 0, 0}},
         {"B0.1", {"B0.1", "T", {0}, 1, 1}},
         {"B1.1", {"B1.1", "T", {1}, 1, 1}},
-        {"B2.1", {"B2.1", "T", {2}, 1, 1}}
+        {"B2.1", {"B2.1", "T", {2}, 1, 1}},
+        {"B0.2", {"B0.2", "G", {0}, 2, 2}},
+        {"B1.2", {"B1.2", "G", {1}, 2, 2}},
+        {"B2.2", {"B2.2", "G", {2}, 2, 2}}
     };
 
     // Matrice di ID blocco
     vector<vector<string>> block_id_matrix = {
-        {"B0.0", "B0.1"},
-        {"B1.0", "B1.1"},
-        {"B2.0", "B2.1"}
+        {"B0.0", "B0.1", "B0.2"},
+        {"B1.0", "B1.1", "B1.2"},
+        {"B2.0", "B2.1", "B2.2"}
     };
+    // Costruisci il grafo
+    Agraph_t* graph = build_graph(block_dict, block_id_matrix);
 
-    // Test della funzione greedy_row_merge
-    block_dict = greedy_row_merge(block_dict, block_id_matrix);
-
-    // Stampa dei risultati
-    cout << "Block ID Matrix after row merge:\n";
-    for (const auto& row : block_id_matrix) {
-        for (const auto& id : row) {
-            cout << id << " ";
-        }
-        cout << endl;
-    }
-
-    // Stampa dei blocchi dopo il merge
-    cout << "\nBlocks after row merge:\n";
-    for (const auto& pair : block_dict) {
-        print_block(pair.second);
-    }
-
-
+    // Pulizia e terminazione
+    agclose(graph);
     return 0;
 }
