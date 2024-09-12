@@ -32,6 +32,13 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, se
         limit = cols
     elif limit == -2:
         limit = int(rows/2)
+    limit_vert = int(params['limit_vert'])
+    if limit_vert == -1: 
+        limit_vert = cols
+    elif limit_vert == -2:
+        limit_vert = int(rows/2)
+
+
     # Generate a random numbers using the user-provided seed
     random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total))
     
@@ -60,13 +67,22 @@ def local_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, se
                     list_mergeable_vertical += [block_2["id"]]
         
         # Check for greedy column merge
+        limit_vert_top = limit_vert_bot = limit_vert
+        if limit_vert > row_index:
+            limit_vert_top = 0
+        else:
+            limit_vert_top = row_index - limit_vert_top
+        if limit_vert + row_index > rows:
+            limit_vert_bot = rows 
+        else:
+            limit_vert_bot = row_index + limit_vert_bot 
         list_mergeable_vertical_greedy = []
         list_used_ids = []
-        for i in range(rows):
+        for i in range(limit_vert_top, limit_vert_bot):
             list_i_mergeable = []
             block_a = block_dict[block_id_matrix[i, col_index]]
             if block_a["id"] not in list_used_ids:
-                for z in range(i, rows):
+                for z in range(i, limit_vert_bot):
                     block_b = block_dict[block_id_matrix[z, col_index]]      
                     if block_a["id"] != block_b["id"] and block_b["id"] not in list_used_ids:
                         if (block_a["begin_column"] == block_b["begin_column"] and
