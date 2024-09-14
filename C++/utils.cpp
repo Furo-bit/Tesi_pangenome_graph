@@ -10,6 +10,7 @@
 #include <random>
 #include <graphviz/gvc.h>
 #include <graphviz/cgraph.h> 
+#include <set>
 
 using namespace std;
 
@@ -196,7 +197,7 @@ void update_block_submatrix_with_same_id(vector<vector<string>>& block_id_matrix
 }
 
 double acceptance_probability(double delta, double temperature, double beta) {
-    return std::exp(-beta * delta / temperature);
+    return exp(-beta * delta / temperature);
 }
 
 // Genera una lista di numeri casuali
@@ -412,18 +413,77 @@ bool check_id_matrix_consistency(const vector<vector<string>>& block_id_matrix,
 }
 
 
-// Funzione di utilità per convertire std::string in char*
-char* toCharPointer(const string& str) {
-    return const_cast<char*>(str.c_str());
+
+void graph_to_gfa(Agraph_t* g, const string& filename) {
+    ofstream outfile(filename);
+    if (!outfile.is_open()) {
+        cerr << "Errore nell'apertura del file GFA" << endl;
+        return;
+    }
+
+    // Scrive l'intestazione del file GFA
+    outfile << "H\tVN:Z:1.0\n";
+
+    // Itera attraverso i nodi del grafo
+    for (Agnode_t* node = agfstnode(g); node; node = agnxtnode(g, node)) {
+        // Ottiene l'etichetta del nodo (se non esiste, usa '*')
+        char* label = agget(node, const_cast<char*>("label"));
+        if (label == nullptr) {
+            label = const_cast<char*>("*");
+        }
+        // Scrive la linea del nodo nel formato GFA
+        outfile << "S\t" << agnameof(node) << "\t*\tLN:i:" << label << "\n";
+    }
+
+    // Itera attraverso gli archi del grafo
+    for (Agnode_t* node = agfstnode(g); node; node = agnxtnode(g, node)) {
+        for (Agedge_t* edge = agfstout(g, node); edge; edge = agnxtout(g, edge)) {
+            // Ottiene l'etichetta dell'arco (se non esiste, usa '*')
+            char* edge_label = agget(edge, const_cast<char*>("label"));
+            if (edge_label == nullptr || strlen(edge_label) == 0) {
+                edge_label = const_cast<char*>("*");
+            }
+            // Scrive la linea dell'arco nel formato GFA
+            outfile << "L\t" << agnameof(agtail(edge)) << "\t+\t"
+                    << agnameof(aghead(edge)) << "\t+\t" << edge_label << "\n";
+        }
+    }
+
+    outfile.close();
 }
 
 
+// Funzione che rimuove i nodi con label formate solo da caratteri "-"
+void remove_indel_nodes(Agraph_t* g) {
+    vector<Agnode_t*> nodes_to_remove;
+    
+    // Itera sui nodi del grafo
+    for (Agnode_t* n = agfstnode(g); n; n = agnxtnode(g, n)) {
+        char* label = agget(n, const_cast<char*>("label"));
+        
+        if (label) {
+            string label_str(label);
+
+            // Se la label è composta solo da "-", contrassegna il nodo per la rimozione
+            if (all_of(label_str.begin(), label_str.end(), [](char c) { return c == '-'; })) {
+                nodes_to_remove.push_back(n);
+            }
+        }
+    }
+
+    // Rimuove i nodi contrassegnati
+    for (Agnode_t* node : nodes_to_remove) {
+        agdelnode(g, node);
+    }
+}
 
 
 // Funzione per costruire il grafo
 Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vector<vector<string>>& block_id_matrix) {
+
     // Crea un contesto Graphviz
     GVC_t *gvc = gvContext();
+
     // Crea un grafo diretto
     Agraph_t *g = agopen(const_cast<char*>("G"), Agdirected, NULL);
 
@@ -448,6 +508,9 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
 
     size_t rows = block_id_matrix.size();
     size_t cols = block_id_matrix[0].size();
+
+    agattr(g, AGEDGE, const_cast<char*>("label"), const_cast<char*>(""));
+
 
     // Archi di source
     for (size_t row = 0; row < rows; ++row) {
@@ -553,10 +616,10 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
                             }
                         
                             // Crea una copia della stringa per passare a agset
-                            agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
-                        
-                        
+                            int result = agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
+
                         }
+
                         break;
                     }
                 }
@@ -565,43 +628,110 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
     }
 
 
+    remove_indel_nodes(g);
+    //print_graph(g);
 
+    // Esportazione del grafo in formato GFA
+    graph_to_gfa(g, "output.gfa");
 
     // Genera layout e renderizza il grafo
-    gvLayout(gvc, g, "dot");
+    gvLayout(gvc, g, "sfdp");
     gvRenderFilename(gvc, g, "png", "graph.png");
     gvFreeLayout(gvc, g);
-
-    // Libera il contesto Graphviz
-    gvFreeContext(gvc);
 
     return g;
 }
 
+
+// Funzione di utilità per convertire string in char*
+char* toCharPointer(const string& str) {
+    return const_cast<char*>(str.c_str());
+}
+
+
+// Funzione di test per visualizzare i nodi e le loro etichette e gli archi
+void print_graph(Agraph_t* g) {
+    // Stampa i nodi e le loro etichette
+    for (Agnode_t* n = agfstnode(g); n; n = agnxtnode(g, n)) {
+        char* label = agget(n, const_cast<char*>("label"));
+        cout << "Node: " << agnameof(n) << " Label: " << (label ? label : "No Label") << endl;
+
+        // Itera sugli archi uscenti dal nodo
+        for (Agedge_t* e = agfstout(g, n); e; e = agnxtout(g, e)) {
+            cout << "Edge: " << agnameof(agtail(e)) << " -> " << agnameof(aghead(e)) << endl;
+        }
+    }
+}
+
+
+// Funzione per rimuovere i nodi con etichette costituite solo da "-" e aggiornare i collegamenti
+void remove_nodes_with_dash_labels(Agraph_t *g) {
+    vector<Agnode_t*> nodes_to_remove;
+
+    // Trova i nodi con etichette costituite solo da "-"
+    for (Agnode_t* node = agfstnode(g); node; node = agnxtnode(g, node)) {
+        const char* label = agget(node, const_cast<char*>("label"));
+        string label_str = (label ? label : "");
+        
+        if (label_str.find_first_not_of('-') == string::npos) {
+            nodes_to_remove.push_back(node);
+        }
+    }
+
+    // Trova i collegamenti da rimuovere e aggiorna i collegamenti
+    for (Agnode_t* node : nodes_to_remove) {
+        vector<Agnode_t*> predecessors;
+        vector<Agnode_t*> successors;
+
+        // Trova i predecessori e i successori
+        for (Agedge_t* e = agfstedge(g, node); e; e = agnxtedge(g, e, node)) {
+            Agnode_t* pred = aghead(e);
+            Agnode_t* succ = agtail(e);
+            if (pred != node && find(predecessors.begin(), predecessors.end(), pred) == predecessors.end()) {
+                predecessors.push_back(pred);
+            }
+            if (succ != node && find(successors.begin(), successors.end(), succ) == successors.end()) {
+                successors.push_back(succ);
+            }
+        }
+
+        // Aggiungi nuovi collegamenti
+        for (Agnode_t* pred : predecessors) {
+            for (Agnode_t* succ : successors) {
+                if (!agedge(g, pred, succ, nullptr, FALSE)) {
+                    Agedge_t* new_edge = agedge(g, pred, succ, nullptr, TRUE);
+                    if (new_edge) {
+                        const char* edge_label = agget(agedge(g, pred, node, nullptr, FALSE), const_cast<char*>("label"));
+                        if (edge_label) {
+                            agset(new_edge, const_cast<char*>("label"), const_cast<char*>(edge_label));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Rimuovi i nodi
+    for (Agnode_t* node : nodes_to_remove) {
+        agdelete(g, node);
+    }
+}
+
+
 int main() {
-    // Creazione di un dizionario di blocchi e una matrice di test
-    unordered_map<string, Block> block_dict = {
-        {"B0.0", {"B0.0", "A", {0}, 0, 0}},
-        {"B1.0", {"B1.0", "A", {1}, 0, 0}},
-        {"B2.0", {"B2.0", "A", {2}, 0, 0}},
-        {"B0.1", {"B0.1", "T", {0}, 1, 1}},
-        {"B1.1", {"B1.1", "T", {1}, 1, 1}},
-        {"B2.1", {"B2.1", "T", {2}, 1, 1}},
-        {"B0.2", {"B0.2", "G", {0}, 2, 2}},
-        {"B1.2", {"B1.2", "G", {1}, 2, 2}},
-        {"B2.2", {"B2.2", "G", {2}, 2, 2}}
-    };
 
-    // Matrice di ID blocco
-    vector<vector<string>> block_id_matrix = {
-        {"B0.0", "B0.1", "B0.2"},
-        {"B1.0", "B1.1", "B1.2"},
-        {"B2.0", "B2.1", "B2.2"}
-    };
-    // Costruisci il grafo
-    Agraph_t* graph = build_graph(block_dict, block_id_matrix);
+    // Leggi le sequenze dal file FASTA
+    const string filename = "test.fa";
+    auto sequences = read_fasta(filename);
 
-    // Pulizia e terminazione
-    agclose(graph);
+    // Converti le sequenze in una matrice
+    auto sequence_matrix = sequences_to_matrix(sequences);
+
+    // Costruisci i blocchi e la matrice degli ID dei blocchi
+    auto [block_dict, block_id_matrix] = build_blocks_from_sequence_matrix(sequence_matrix);
+
+    // Costruisce il grafo e lo salva 
+    Agraph_t* g = build_graph(block_dict, block_id_matrix);
+
     return 0;
 }
