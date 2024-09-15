@@ -1,3 +1,5 @@
+#include "utils.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -14,15 +16,6 @@
 
 using namespace std;
 
-
-// Definizione della struttura Block
-struct Block {
-    string id;
-    string label;
-    vector<int> sequence_ids;
-    int begin_column;
-    int end_column;
-};
 
 // Funzione per creare un Block
 Block create_block(const string& id, const string& label, 
@@ -718,20 +711,47 @@ void remove_nodes_with_dash_labels(Agraph_t *g) {
 }
 
 
-int main() {
+// Funzione per leggere il file di configurazione
+unordered_map<string, string> read_config(const string& filename) {
+    unordered_map<string, string> config;
+    ifstream file(filename);
+    
+    if (!file) {
+        cerr << "Errore: Impossibile aprire il file " << filename << endl;
+        return config;
+    }
 
-    // Leggi le sequenze dal file FASTA
-    const string filename = "test.fa";
-    auto sequences = read_fasta(filename);
+    string line;
+    bool in_parameters_section = false;
+    
+    while (getline(file, line)) {
+        // Salta le righe vuote
+        if (line.empty()) continue;
+        
+        // Verifica se la riga inizia con la sezione "[parameters]"
+        if (line == "[parameters]") {
+            in_parameters_section = true;
+            continue;
+        }
 
-    // Converti le sequenze in una matrice
-    auto sequence_matrix = sequences_to_matrix(sequences);
+        // Se siamo nella sezione [parameters], elabora la chiave e il valore
+        if (in_parameters_section) {
+            size_t equal_sign_pos = line.find('=');
+            
+            if (equal_sign_pos != string::npos) {
+                string key = line.substr(0, equal_sign_pos);
+                string value = line.substr(equal_sign_pos + 1);
 
-    // Costruisci i blocchi e la matrice degli ID dei blocchi
-    auto [block_dict, block_id_matrix] = build_blocks_from_sequence_matrix(sequence_matrix);
+                // Rimuovi eventuali spazi
+                key.erase(remove_if(key.begin(), key.end(), ::isspace), key.end());
+                value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
 
-    // Costruisce il grafo e lo salva 
-    Agraph_t* g = build_graph(block_dict, block_id_matrix);
+                // Aggiungi la coppia chiave-valore alla mappa
+                config[key] = value;
+            }
+        }
+    }
 
-    return 0;
+    file.close();
+    return config;
 }
