@@ -14,6 +14,7 @@
 #include <graphviz/gvc.h>
 #include <graphviz/cgraph.h> 
 #include <set>
+#include <map>
 
 using namespace std;
 
@@ -50,5 +51,6 @@ char* toCharPointer(const string& str);
 void print_graph(Agraph_t* g);
 void remove_nodes_with_dash_labels(Agraph_t *g);
 unordered_map<string, string> read_config(const string& filename);
+string remove_chars(const std::string& str, const std::string& chars_to_remove);
 
 #endif

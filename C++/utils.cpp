@@ -711,47 +711,49 @@ void remove_nodes_with_dash_labels(Agraph_t *g) {
 }
 
 
-// Funzione per leggere il file di configurazione
 unordered_map<string, string> read_config(const string& filename) {
     unordered_map<string, string> config;
     ifstream file(filename);
     
-    if (!file) {
-        cerr << "Errore: Impossibile aprire il file " << filename << endl;
+    if (!file.is_open()) {
+        cerr << "Errore nell'aprire il file: " << filename << endl;
         return config;
     }
 
     string line;
-    bool in_parameters_section = false;
-    
     while (getline(file, line)) {
-        // Salta le righe vuote
-        if (line.empty()) continue;
-        
-        // Verifica se la riga inizia con la sezione "[parameters]"
-        if (line == "[parameters]") {
-            in_parameters_section = true;
+        // Ignora le linee vuote o che iniziano con '[' (es. [parameters])
+        if (line.empty() || line[0] == '[') {
             continue;
         }
 
-        // Se siamo nella sezione [parameters], elabora la chiave e il valore
-        if (in_parameters_section) {
-            size_t equal_sign_pos = line.find('=');
-            
-            if (equal_sign_pos != string::npos) {
-                string key = line.substr(0, equal_sign_pos);
-                string value = line.substr(equal_sign_pos + 1);
+        // Trova la posizione del segno "="
+        size_t pos = line.find('=');
+        if (pos != string::npos) {
+            string key = line.substr(0, pos);
+            string value = line.substr(pos + 1);
 
-                // Rimuovi eventuali spazi
-                key.erase(remove_if(key.begin(), key.end(), ::isspace), key.end());
-                value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
+            // Rimuove eventuali spazi bianchi ai lati delle stringhe
+            key.erase(key.find_last_not_of(" \t\n\r\f\v") + 1);
+            value.erase(value.find_last_not_of(" \t\n\r\f\v") + 1);
 
-                // Aggiungi la coppia chiave-valore alla mappa
-                config[key] = value;
-            }
+            // Inserisce il parametro nel dizionario
+            config[key] = value;
         }
     }
 
     file.close();
     return config;
+}
+
+// Utility function to remove specific characters from a string
+string remove_chars(const std::string& str, const std::string& chars_to_remove) {
+    std::string result;
+    result.reserve(str.size());
+    for (char ch : str) {
+        if (chars_to_remove.find(ch) == std::string::npos) {
+            result += ch;
+        }
+    }
+    return result;
 }
