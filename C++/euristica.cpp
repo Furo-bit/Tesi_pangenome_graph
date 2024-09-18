@@ -8,7 +8,7 @@ T convert_to(const string& value) {
     return result;
 }
 
-void simulated_annealing(const unordered_map<string, Block>& block_dict, const vector<vector<string>>& block_id_matrix){
+void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector<string>>& block_id_matrix){
 
     string params = "params_simulated_annealing_c.txt";
     unordered_map<string, string> config = read_config(params);
@@ -162,9 +162,9 @@ void simulated_annealing(const unordered_map<string, Block>& block_dict, const v
         // Calculate greedy vertical gain
         if (!list_mergeable_vertical_greedy.empty()) {
             int vertical_greedy_merge_gain = 0;
-            for (const vector<string> comp_list : list_mergeable_vertical_greedy) {
-                const string& block_id = comp_list[0];
-                const Block& block_greedy = block_dict.at(block_id);
+            for (vector<string> comp_list : list_mergeable_vertical_greedy) {
+                string& block_id = comp_list[0];
+                Block& block_greedy = block_dict.at(block_id);
                 string block_greedy_label = block_greedy.label;
                 
                 // Rimuovi i caratteri '-' dalla label
@@ -236,12 +236,13 @@ void simulated_annealing(const unordered_map<string, Block>& block_dict, const v
                                         list_mergeable_horizontal_right.end());
 
         int horizontal_merge_gain;
+        Block new_block_horizontal;
         if (!list_mergeable_horizontal_left.empty() || !list_mergeable_horizontal_right.empty()) {
             Block new_block_horizontal = block_dict.at(list_mergeable_horizontal[0]); 
             string new_block_horizontal_label = new_block_horizontal.label;
             new_block_horizontal_label  = remove_chars(new_block_horizontal_label, "-");
             horizontal_merge_gain = of_pangeblocks(threshold, penalization, new_block_horizontal_label.size());
-            for (const string& id : list_mergeable_horizontal) {
+            for (string& id : list_mergeable_horizontal) {
                 if (new_block_horizontal.id != id) {
                     Block block_2 = block_dict.at(id); 
                     string block_2_label = block_2.label;
@@ -261,6 +262,8 @@ void simulated_annealing(const unordered_map<string, Block>& block_dict, const v
 
 
 
+        Block new_block_1r;
+        Block new_block_2r;
 
         // Check row split
         if (block_1.sequence_ids.size() > 1) {
@@ -284,6 +287,10 @@ void simulated_annealing(const unordered_map<string, Block>& block_dict, const v
             operation_gains["row_split"] = delta;
         }
         
+
+        Block new_block_1c;
+        Block new_block_2c;
+
         // Check column split
         if (block_1.end_column - block_1.begin_column > 0){
             
@@ -308,11 +315,149 @@ void simulated_annealing(const unordered_map<string, Block>& block_dict, const v
 
         }
 
+        // Select operation
+        int probability;
+        if (!operation_gains.empty()) {
+            // Converti unordered_map in un vettore di coppie per poter ordinare
+            vector<pair<string, int>> sorted_gains(operation_gains.begin(), operation_gains.end());
 
-        for (const auto& entry : operation_gains) {
-            std::cout << entry.first << ": " << entry.second << std::endl;
+            // Ordina il vettore per il secondo elemento (gain)
+            sort(sorted_gains.begin(), sorted_gains.end(),
+                    [](pair<string, int>& a, pair<string, int>& b) {
+                        return a.second < b.second;
+                    });
+
+            // Prendi la prima operazione e il suo guadagno dopo aver ordinato
+            string operation = sorted_gains.front().first;
+            float gain = sorted_gains.front().second;
+
+            // Aggiorna il vettore operations_for_cooling
+            operations_for_cooling.insert(operations_for_cooling.begin(), operation);
+            operations_for_cooling.pop_back(); // Rimuove l'ultimo elemento
+
+            int probability = 1;
+            
+            if (operation == "column_split" || operation == "row_split"){
+                probability = acceptance_probability(gain, temperature, beta);
+            }
+            else if (operation == "column_merge")
+            {
+                // Column merge
+                for (auto& id : list_mergeable_horizontal) {
+                    block_dict.erase(id);  // Rimuove l'elemento dal dizionario
+                }
+
+                // Assegna il nuovo blocco orizzontale al dizionario
+                block_dict[new_block_horizontal.id] = new_block_horizontal; 
+
+                // Aggiorna il block_id_matrix per ciascuna sequenza e colonna
+                for (auto& sequence : new_block_horizontal.sequence_ids) {
+                    for (int column = new_block_horizontal.begin_column; column <= new_block_horizontal.end_column; ++column) {
+                        block_id_matrix[sequence][column] = new_block_horizontal.id;
+                    }
+                }
+            }
+            else if (operation == "row_split"){
+                if (distribution(generator) / static_cast<float>(cell_total) < probability) {
+
+                    // Row split - Aggiorna new_block_1r
+                    for (auto& sequence : new_block_1r.sequence_ids) {
+                        for (int column = new_block_1r.begin_column; column <= new_block_1r.end_column; ++column) {
+                            block_id_matrix[sequence][column] = new_block_1r.id;
+                        }
+                    }
+
+                    // Row split - Aggiorna new_block_2r
+                    for (auto& sequence : new_block_2r.sequence_ids) {
+                        for (int column = new_block_2r.begin_column; column <= new_block_2r.end_column; ++column) {
+                            block_id_matrix[sequence][column] = new_block_2r.id;
+                        }
+                    }
+
+                    // Aggiorna il dizionario
+                    block_dict.erase(block_1.id);  // Elimina il vecchio blocco
+                    block_dict[new_block_1r.id] = new_block_1r;  // Aggiungi new_block_1r
+                    block_dict[new_block_2r.id] = new_block_2r;  // Aggiungi new_block_2r
+                }
+
+            }
+            else if (operation == "column_split"){
+                if (distribution(generator) / static_cast<float>(cell_total) < probability) {
+
+                    // Column split - Aggiorna new_block_1c
+                    for (auto& sequence : new_block_1c.sequence_ids) {
+                        for (int column = new_block_1c.begin_column; column <= new_block_1c.end_column; ++column) {
+                            block_id_matrix[sequence][column] = new_block_1c.id;
+                        }
+                    }
+
+                    // Column split - Aggiorna new_block_2c
+                    for (auto& sequence : new_block_2c.sequence_ids) {
+                        for (int column = new_block_2c.begin_column; column <= new_block_2c.end_column; ++column) {
+                            block_id_matrix[sequence][column] = new_block_2c.id;
+                        }
+                    }
+
+                    // Aggiorna il dizionario
+                    block_dict.erase(block_1.id);  // Elimina il vecchio blocco
+                    block_dict[new_block_1c.id] = new_block_1c;  // Aggiungi new_block_1c
+                    block_dict[new_block_2c.id] = new_block_2c;  // Aggiungi new_block_2c
+                }
+            }
+            else if (operation == "row_merge_greedy"){
+                for (auto& comp_list : list_mergeable_vertical_greedy) {
+                    string block_1_id = comp_list[0];
+                    Block& block_1 = block_dict[block_1_id];
+
+                    for (string& block_2_id : comp_list) {
+                        if (block_1_id != block_2_id) {
+                            Block& block_2 = block_dict[block_2_id];
+                            block_1 = merge_two_blocks(block_1, block_2, "row_union");
+                            block_dict.erase(block_2_id);
+                        }
+                    }
+
+                    block_dict[block_1_id] = block_1;
+
+                    for (auto& sequence : block_1.sequence_ids) {
+                        for (int column = block_1.begin_column; column <= block_1.end_column; ++column) {
+                            block_id_matrix[sequence][column] = block_1.id;
+                        }
+                    }
+                }
+            }
+
+
+
         }
-        break; // per uscire dal while
+
+
+
+        for (auto& entry : operation_gains) {
+            cout << entry.first << ": " << entry.second << endl;
+        }
+
+        // Cooling condition
+        // Inizializza i contatori per gli split di riga e colonna
+        int column_split_number = 0;
+        int row_split_number = 0;
+
+        // Conta il numero di "column_split" e "row_split" nel vettore operations_for_cooling
+        column_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "column_split");
+        row_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "row_split");
+
+        // Verifica se la condizione di cooling è soddisfatta
+        if (column_split_number + row_split_number >= static_cast<int>((operations_for_cooling.size() / 100.0) * 54)) {
+            temperature *= cooling_factor;
+
+            // Reinizializza il vettore operations_for_cooling
+            operations_for_cooling = vector<string>(rows * 15, "new_start");
+        }
+
+        // Controlla se la temperatura ha raggiunto il livello di terminazione
+        if (temperature <= termination_temperature) {
+            break;
+        }
     }
     
 }
