@@ -37,8 +37,8 @@ void update_block_submatrix_with_same_id(vector<vector<string>>& block_id_matrix
 double acceptance_probability(double delta, double temperature, double beta);
 vector<int> generate_random_numbers(int seed, int start, int end, int count);
 int generate_random_number(int seed, int start, int end);
-tuple<Block, Block> split_block_by_row(const Block& block, int split_number);
-tuple<Block, Block> split_block_by_column(const Block& block, int split_number);
+tuple<Block, Block> split_block_by_row(const Block& block, int split_number, int split_point);
+tuple<Block, Block> split_block_by_column(const Block& block, int split_number, int split_point);
 unordered_map<string, Block> greedy_row_merge(unordered_map<string, Block>& block_dict, vector<vector<string>>& block_id_matrix);
 int of_min_label_length_threshold(int threshold, int penalization, int label_length);
 int of_pangeblocks(int threshold, int penalization, int label_length);

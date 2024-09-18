@@ -214,18 +214,12 @@ int generate_random_number(int seed, int start, int end) {
 }
 
 // Funzione per dividere un blocco per riga
-tuple<Block, Block> split_block_by_row(const Block& block, int split_number) {
+tuple<Block, Block> split_block_by_row(const Block& block, int split_number, int split_point) {
     const vector<int>& sequence_ids = block.sequence_ids;
 
     if (sequence_ids.size() <= 1) {
         throw invalid_argument("Block must contain at least two sequence IDs to be split.");
     }
-
-    // Generatore di numeri casuali per il punto di divisione
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<int> dist(1, sequence_ids.size() - 1);
-    int split_point = dist(gen);
 
     // Creazione dei nuovi ID dei blocchi
     string id1, id2;
@@ -261,7 +255,7 @@ tuple<Block, Block> split_block_by_row(const Block& block, int split_number) {
 
 
 // Funzione per dividere un blocco per colonna
-tuple<Block, Block> split_block_by_column(const Block& block, int split_number) {
+tuple<Block, Block> split_block_by_column(const Block& block, int split_number, int split_point) {
     const string& label = block.label;
     int begin_column = block.begin_column;
     int end_column = block.end_column;
@@ -270,11 +264,6 @@ tuple<Block, Block> split_block_by_column(const Block& block, int split_number) 
         throw invalid_argument("Block must span at least two columns to be split.");
     }
 
-    // Generatore di numeri casuali per il punto di divisione
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<int> dist(begin_column + 1, end_column);
-    int split_point = dist(gen);
 
     // Creazione dei nuovi ID dei blocchi
     string id1, id2;
