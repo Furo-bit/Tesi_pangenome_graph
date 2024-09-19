@@ -92,6 +92,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
 
         // Accedi al blocco corrispondente usando gli indici
         Block block_1 = block_dict.at(block_id_matrix[row_index][col_index]);
+        print_block(block_1);
 
         vector<string> list_mergeable_horizontal;
         vector<string> list_mergeable_horizontal_left;
@@ -177,7 +178,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             operation_gains["row_merge_greedy"] = vertical_greedy_merge_gain;
         }
 
-        // Row merge
+        // Column merge
         // Check left
         int limit_left;
         if (block_1.begin_column <= limit_horizontal) {
@@ -206,14 +207,15 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             limit_right = cols;
         }
         else{
-            limit_right = block_1.end_column + limit_right;
+            limit_right = block_1.end_column + limit_horizontal;
         }
-        for (int column = block_1.end_column; column < limit_right; ++column){
+        for (int column = block_1.end_column; column < limit_right + 1; ++column){
+            cout << column << endl; //index out of bound da risolvere
             Block block_2 = block_dict.at(block_id_matrix[row_index][column]);
             if (block_1.id != block_2.id && 
                 find(list_mergeable_horizontal_right.begin(), list_mergeable_horizontal_right.end(), block_2.id) == list_mergeable_horizontal_right.end()){
                     if (block_1.sequence_ids == block_2.sequence_ids){
-                        list_mergeable_horizontal_right.insert(list_mergeable_horizontal_right.begin(), block_2.id);
+                        list_mergeable_horizontal_right.push_back(block_2.id);
                     }
                     else{
                         break;
@@ -235,10 +237,11 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
                                         list_mergeable_horizontal_right.begin(),
                                         list_mergeable_horizontal_right.end());
 
+
         int horizontal_merge_gain;
         Block new_block_horizontal;
         if (!list_mergeable_horizontal_left.empty() || !list_mergeable_horizontal_right.empty()) {
-            Block new_block_horizontal = block_dict.at(list_mergeable_horizontal[0]); 
+            new_block_horizontal = block_dict.at(list_mergeable_horizontal[0]); 
             string new_block_horizontal_label = new_block_horizontal.label;
             new_block_horizontal_label  = remove_chars(new_block_horizontal_label, "-");
             horizontal_merge_gain = of_pangeblocks(threshold, penalization, new_block_horizontal_label.size());
@@ -252,7 +255,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
                     new_block_horizontal = merge_two_blocks(new_block_horizontal, block_2, "column_union");
                 }
             }
-
+        
             new_block_horizontal_label = new_block_horizontal.label;
             new_block_horizontal_label  = remove_chars(new_block_horizontal_label, "-");
             int new_block_horizontal_label_value = of_pangeblocks(threshold, penalization, new_block_horizontal_label.size());
@@ -342,9 +345,13 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             }
             else if (operation == "column_merge")
             {
+
                 // Column merge
                 for (auto& id : list_mergeable_horizontal) {
-                    block_dict.erase(id);  // Rimuove l'elemento dal dizionario
+                    if (id != new_block_horizontal.id)
+                    {
+                        block_dict.erase(id);  // Rimuove l'elemento dal dizionario
+                    }                 
                 }
 
                 // Assegna il nuovo blocco orizzontale al dizionario
@@ -436,6 +443,14 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         for (auto& entry : operation_gains) {
             cout << entry.first << ": " << entry.second << endl;
         }
+        
+        // Visualizza la matrice di ID
+        print_block_id_matrix(block_id_matrix);
+        
+        // Visualizza il dizionario di blocchi
+        print_block_dict(block_dict);
+
+        cout << "\n====================================\n\n";
 
         // Cooling condition
         // Inizializza i contatori per gli split di riga e colonna

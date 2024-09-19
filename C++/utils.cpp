@@ -189,7 +189,7 @@ void update_block_submatrix_with_same_id(vector<vector<string>>& block_id_matrix
     }
 }
 
-double acceptance_probability(double delta, double temperature, double beta) {
+float acceptance_probability(float delta, float temperature, float beta) {
     return exp(-beta * delta / temperature);
 }
 
@@ -745,4 +745,35 @@ string remove_chars(const std::string& str, const std::string& chars_to_remove) 
         }
     }
     return result;
+}
+
+// Funzione per stampare la matrice di ID
+void print_block_id_matrix(const vector<vector<string>>& block_id_matrix) {
+    cout << "Block ID Matrix:\n";
+    for (const auto& row : block_id_matrix) {
+        for (const auto& id : row) {
+            cout << id << " ";
+        }
+        cout << "\n";
+    }
+}
+
+void print_block_dict(const unordered_map<std::string, Block>& block_dict) {
+    cout << "Block Dictionary:\n";
+    for (const auto& pair : block_dict) {
+        const Block& block = pair.second;
+        print_block(block);
+        cout << "-------------------\n";
+    }
+}
+
+void print_vector(const vector<string>& vec) {
+    cout << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        cout << vec[i];
+        if (i != vec.size() - 1) {
+            cout << ", ";  // Aggiungi una virgola tra gli elementi
+        }
+    }
+    cout << "]" << endl;
 }

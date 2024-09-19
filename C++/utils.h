@@ -34,7 +34,7 @@ vector<Block> sort_blocks_by_sequence_id(const unordered_map<string, Block>& blo
 Block merge_two_blocks(const Block& block_1, const Block& block_2, const string& how);
 unordered_map<string, Block> update_block_dict_with_same_id(unordered_map<string, Block>& block_dict, const Block& new_block, const string& id1, const string& id2);
 void update_block_submatrix_with_same_id(vector<vector<string>>& block_id_matrix, const string& new_id, const vector<int>& sequences, int first_column, int last_column);
-double acceptance_probability(double delta, double temperature, double beta);
+float acceptance_probability(float delta, float temperature, float beta);
 vector<int> generate_random_numbers(int seed, int start, int end, int count);
 int generate_random_number(int seed, int start, int end);
 tuple<Block, Block> split_block_by_row(const Block& block, int split_number, int split_point);
@@ -52,5 +52,8 @@ void print_graph(Agraph_t* g);
 void remove_nodes_with_dash_labels(Agraph_t *g);
 unordered_map<string, string> read_config(const string& filename);
 string remove_chars(const std::string& str, const std::string& chars_to_remove);
+void print_block_id_matrix(const vector<vector<string>>& block_id_matrix);
+void print_block_dict(const unordered_map<std::string, Block>& block_dict);
+void print_vector(const vector<string>& vec);
 
 #endif
