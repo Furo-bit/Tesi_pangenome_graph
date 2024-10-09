@@ -81,8 +81,9 @@ vector<vector<char>> sequences_to_matrix(const unordered_map<string, vector<char
     }
     
     size_t length = sequences.begin()->second.size();
-    
+
     for (const auto& pair : sequences) {
+
         if (pair.second.size() != length) {
             cerr << "Le sequenze non hanno la stessa lunghezza!" << endl;
             return {};
@@ -133,6 +134,30 @@ vector<Block> sort_blocks_by_sequence_id(const unordered_map<string, Block>& blo
     });
     
     return blocks;
+}
+
+void printEdgeInfo(Agedge_t* e) {
+    if (e == nullptr) {
+        cout << "Errore: Arco non trovato" << endl;
+        return;
+    }
+
+    // Ottenere i nodi sorgente e destinazione dell'arco
+    Agnode_t* source = agtail(e);  // Nodo sorgente
+    Agnode_t* target = aghead(e);  // Nodo destinazione
+
+    // Ottenere l'etichetta dell'arco (se esiste)
+    char* edge_label = agget(e, (char*)"label");
+    if (edge_label == nullptr || edge_label[0] == '\0') {
+        edge_label = (char*)"<no label>";
+    }
+
+
+    // Stampa le informazioni
+    cout << "Informazioni sull'arco:" << endl;
+    cout << "  Nodo sorgente: " << agnameof(source) << endl;
+    cout << "  Nodo destinazione: " << agnameof(target) << endl;
+    cout << "  Etichetta: " << edge_label << endl;
 }
 
 // Funzione per unire due blocchi
@@ -459,6 +484,80 @@ void remove_indel_nodes(Agraph_t* g) {
     }
 }
 
+// Funzione per leggere il file GFA e correggere gli archi
+void processGFA(const string& input_file, const string& output_file) {
+    ifstream infile(input_file);
+    ofstream outfile(output_file);
+
+    if (!infile.is_open()) {
+        cerr << "Errore nell'aprire il file di input!" << endl;
+        return;
+    }
+
+    if (!outfile.is_open()) {
+        cerr << "Errore nell'aprire il file di output!" << endl;
+        return;
+    }
+
+    unordered_map<string, set<string>> edge_map;  // Mappa che tiene traccia degli archi e delle loro label
+    vector<string> lines;  // Memorizza tutte le righe non di archi
+
+    string line;
+    while (getline(infile, line)) {
+        if (line[0] != 'L') {  // Righe non di archi
+            lines.push_back(line);
+        } else {
+            // Linea dell'arco, separiamo i campi
+            istringstream iss(line);
+            string type, source, source_dir, target, target_dir, label;
+            getline(iss, type, '\t');  // 'L'
+            getline(iss, source, '\t');
+            getline(iss, source_dir, '\t');
+            getline(iss, target, '\t');
+            getline(iss, target_dir, '\t');
+            getline(iss, label, '\t');
+
+            // Creiamo una chiave unica per l'arco (source-target)
+            string edge_key = source + "->" + target;
+
+            // Aggiungi la label alla mappa
+            edge_map[edge_key].insert(label);
+        }
+    }
+
+    // Scriviamo le righe non di archi nel file di output
+    for (const string& l : lines) {
+        outfile << l << endl;
+    }
+
+    // Scriviamo gli archi unificati nel file di output
+    for (const auto& pair : edge_map) {
+        string edge_key = pair.first;
+        const set<string>& labels = pair.second;
+
+        // Separiamo source e target
+        size_t arrow_pos = edge_key.find("->");
+        string source = edge_key.substr(0, arrow_pos);
+        string target = edge_key.substr(arrow_pos + 2);
+
+        // Concatenazione delle label
+        string concatenated_labels;
+        for (const auto& label : labels) {
+            if (!concatenated_labels.empty()) {
+                concatenated_labels += ",";
+            }
+            concatenated_labels += label;
+        }
+
+        // Scrivi l'arco nel file di output con le label concatenate
+        outfile << "L\t" << source << "\t+\t" << target << "\t+\t" << concatenated_labels << endl;
+    }
+
+    infile.close();
+    outfile.close();
+}
+
+
 
 // Funzione per costruire il grafo
 Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vector<vector<string>>& block_id_matrix) {
@@ -485,7 +584,8 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
         const string& block_id = pair.first;
         const Block& block = pair.second;
         Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), TRUE);
-        agset(node, const_cast<char*>("label"), const_cast<char*>(block.label.c_str()));
+        string label = remove_chars(block.label, "-");
+        agset(node, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
     }
 
     size_t rows = block_id_matrix.size();
@@ -493,7 +593,7 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
 
     agattr(g, AGEDGE, const_cast<char*>("label"), const_cast<char*>(""));
 
-
+    cout << "Costruzione archi source" << endl;
     // Archi di source
     for (size_t row = 0; row < rows; ++row) {
         for (size_t col = 0; col < cols - 1; ++col) {
@@ -505,11 +605,13 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
                 Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), false);
                 
                 // Crea o trova l'arco tra node_1 e node_2
-                Agedge_t* e = agedge(g, source, node, nullptr, TRUE);
+                Agedge_t* e = agedge(g, source, node, nullptr, true);
                 
+                //printEdgeInfo(e);
+
                 string label = to_string(row);
                 if (e != nullptr) {
-                
+                    
                     // Verifica se esiste già l'etichetta
                     char* label_ptr = agget(e, const_cast<char*>("label"));
                     if (label_ptr != nullptr) {
@@ -520,15 +622,21 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
                     }
                 
                     // Crea una copia della stringa per passare a agset
-                    agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
-                
-               
+                    //agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
+                    agset(e, (char*)"label", strdup(label.c_str()));  // Usa strdup per evitare problemi di memoria
+                    //printEdgeInfo(e);
+
+                    char* new_label = agget(e, (char*)"label");
                 }
+
+                 
+
                 break;
             }
         }
     }
 
+    cout << "Costruzione archi sink" << endl;
     // Archi di sink 
     for (size_t row = 0; row < rows; ++row) {
         for (size_t col = cols - 1; col >= 0; --col) {
@@ -564,7 +672,7 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
         }
     }
 
-
+    /* cout << "Costruzione archi" << endl;
     // Aggiungi gli archi normali
     for (size_t row = 0; row < rows; ++row) {
         for (size_t col = 0; col < cols - 1; ++col) {
@@ -601,6 +709,7 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
                             int result = agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
 
                         }
+                        
 
                         break;
                     }
@@ -608,17 +717,18 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
             }
         }
     }
-
+    */
 
     remove_indel_nodes(g);
     //print_graph(g);
 
     // Esportazione del grafo in formato GFA
-    graph_to_gfa(g, "output.gfa");
+    graph_to_gfa(g, "graph.gfa");
+    //processGFA("graph.gfa", "clean_graph.gfa"); 
 
     // Genera layout e renderizza il grafo
-    gvLayout(gvc, g, "sfdp");
-    gvRenderFilename(gvc, g, "png", "graph.png");
+    //gvLayout(gvc, g, "dot");
+    //gvRenderFilename(gvc, g, "png", "graph.png");
     gvFreeLayout(gvc, g);
 
     return g;

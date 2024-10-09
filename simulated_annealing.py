@@ -36,14 +36,13 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
     cols = len(block_id_matrix[0])
     cell_total = rows * cols
 
-    splits_for_cooling = int(params['splits_for_cooling'])
     operations_for_cooling = [None] * int(rows * 15) 
 
-    limit = int(params['limit'])
-    if limit == -1: 
-        limit = cols
-    elif limit == -2:
-        limit = int(rows/2)
+    limit_orizzontale = int(params['limit_orizzontale'])
+    if limit_orizzontale == -1: 
+        limit_orizzontale = cols
+    elif limit_orizzontale == -2:
+        limit_orizzontale = int(rows/2)
     limit_vert = int(params['limit_vert'])
     if limit_vert == -1: 
         limit_vert = cols
@@ -85,6 +84,8 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
             limit_vert_bot = rows 
         else:
             limit_vert_bot = row_index + limit_vert_bot 
+        
+        # print(limit_vert_top, limit_vert_bot)
         list_mergeable_vertical_greedy = []
         list_used_ids = []
         for i in range(limit_vert_top, limit_vert_bot):
@@ -137,10 +138,10 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
 
         # Check the row for merge
         # Check left
-        if block_1["begin_column"] <= limit :
+        if block_1["begin_column"] <= limit_orizzontale :
             limit_left = 0
         else:
-            limit_left = block_1["begin_column"] - limit
+            limit_left = block_1["begin_column"] - limit_orizzontale
         for column in reversed(range(limit_left, block_1["begin_column"])):
             block_2 = block_dict[block_id_matrix[row_index, column]] 
             if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_left:
@@ -151,10 +152,10 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
         list_mergeable_horizontal_left.reverse()
         
         # Check right
-        if block_1["end_column"] + limit >= cols :
+        if block_1["end_column"] + limit_orizzontale >= cols :
             limit_right = cols
         else:
-            limit_right = block_1["end_column"] + limit
+            limit_right = block_1["end_column"] + limit_orizzontale
         for column in range(block_1["end_column"], limit_right):
             block_2 = block_dict[block_id_matrix[row_index, column]] 
             if block_1["id"] != block_2["id"] and block_2["id"] not in list_mergeable_horizontal_right:
@@ -162,13 +163,19 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
                     list_mergeable_horizontal_right += [block_2["id"]]
                 else:
                     break
-        
+
+        # print(limit_left, limit_right)
         # Calculate gain
         list_mergeable_horizontal = list_mergeable_horizontal_left + [block_1["id"]] + list_mergeable_horizontal_right
-        horizontal_merge_gain = block_1_label_value
+        horizontal_merge_gain = 0 #pre changes
         if list_mergeable_horizontal_left != [] or list_mergeable_horizontal_right != []:
             new_block_horizontal = block_dict[list_mergeable_horizontal[0]]
+            first_block = new_block_horizontal
             #del list_mergeable_horizontal[0]
+            first_block_label = first_block["label"] #corretto
+            first_block_label = first_block_label.translate(str.maketrans("", "", "-"))
+            first_block_label_value = utils.of_pangeblocks(threshold, penalization, len(first_block_label))    
+            horizontal_merge_gain += first_block_label_value
             for id in list_mergeable_horizontal:
                 if new_block_horizontal["id"] != id :
                     block_2 = block_dict[id]
@@ -307,7 +314,7 @@ def simulated_annealing(block_dict: Dict, block_id_matrix: np.ndarray, params: D
         column_split_number = row_split_number = 0
         column_split_number = operations_for_cooling.count("column_split")
         row_split_number = operations_for_cooling.count("row_split")
-        if column_split_number + row_split_number >= int((len(operations_for_cooling)/100) * 55):#set(operations_for_cooling).issubset({"column_split", "row_split"}):
+        if column_split_number + row_split_number >= int((len(operations_for_cooling)/100) * 54):#set(operations_for_cooling).issubset({"column_split", "row_split"}):
             temperature = cooling_factor * temperature 
             operations_for_cooling = [None] * int(rows * 15)
             

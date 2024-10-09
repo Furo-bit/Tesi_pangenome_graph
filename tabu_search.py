@@ -42,7 +42,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
     tabu_dict = {}
 
     # Generate a random numbers using the user-provided seed
-    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total))
+    random_numbers = utils.generate_random_numbers(seed, 1, cell_total, int(cell_total * 2.5))
     
     for x in random_numbers:
         # Transform the number in matrix indeces 
@@ -160,10 +160,15 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
             
             # Calculate gain
             list_mergeable_horizontal = list_mergeable_horizontal_left + [block_1["id"]] + list_mergeable_horizontal_right
-            horizontal_merge_gain = block_1_label_value
+            horizontal_merge_gain = 0 #pre changes
             if list_mergeable_horizontal_left != [] or list_mergeable_horizontal_right != []:
                 new_block_horizontal = block_dict[list_mergeable_horizontal[0]]
+                first_block = new_block_horizontal
                 #del list_mergeable_horizontal[0]
+                first_block_label = first_block["label"] #corretto
+                first_block_label = first_block_label.translate(str.maketrans("", "", "-"))
+                first_block_label_value = utils.of_pangeblocks(threshold, penalization, len(first_block_label))    
+                horizontal_merge_gain += first_block_label_value
                 for id in list_mergeable_horizontal:
                     if new_block_horizontal["id"] != id :
                         block_2 = block_dict[id]
@@ -172,6 +177,7 @@ def tabu_search(block_dict: Dict, block_id_matrix: np.ndarray, params: Dict, seq
                         block_2_label_value = utils.of_pangeblocks(threshold, penalization, len(block_2_label))    
                         horizontal_merge_gain += block_2_label_value
                         new_block_horizontal = utils.merge_two_blocks(new_block_horizontal, block_2, "column_union")
+                    
                 new_block_horizontal_label = new_block_horizontal["label"]
                 new_block_horizontal_label = new_block_horizontal_label.translate(str.maketrans("", "", "-"))
                 new_block_horizontal_label_value = utils.of_pangeblocks(threshold, penalization, len(new_block_horizontal_label))    

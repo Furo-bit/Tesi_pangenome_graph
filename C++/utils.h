@@ -55,5 +55,8 @@ string remove_chars(const std::string& str, const std::string& chars_to_remove);
 void print_block_id_matrix(const vector<vector<string>>& block_id_matrix);
 void print_block_dict(const unordered_map<std::string, Block>& block_dict);
 void print_vector(const vector<string>& vec);
+void printEdgeInfo(Agedge_t* e);
+void processGFA(const string& input_file, const string& output_file);
+
 
 #endif

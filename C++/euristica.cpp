@@ -1,4 +1,8 @@
 #include "utils.h"
+#include <chrono>
+#include <sys/resource.h> 
+
+using namespace std::chrono;
 
 // Funzione per convertire stringa in un tipo numerico
 template<typename T>
@@ -7,6 +11,8 @@ T convert_to(const string& value) {
     stringstream(value) >> result; // Converte la stringa in un valore del tipo T
     return result;
 }
+
+
 
 void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector<string>>& block_id_matrix){
 
@@ -92,7 +98,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
 
         // Accedi al blocco corrispondente usando gli indici
         Block block_1 = block_dict.at(block_id_matrix[row_index][col_index]);
-        print_block(block_1);
+        //print_block(block_1);
 
         vector<string> list_mergeable_horizontal;
         vector<string> list_mergeable_horizontal_left;
@@ -209,8 +215,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         else{
             limit_right = block_1.end_column + limit_horizontal;
         }
-        for (int column = block_1.end_column; column < limit_right + 1; ++column){
-            cout << column << endl; //index out of bound da risolvere
+        for (int column = block_1.end_column; column < limit_right; ++column){ 
             Block block_2 = block_dict.at(block_id_matrix[row_index][column]);
             if (block_1.id != block_2.id && 
                 find(list_mergeable_horizontal_right.begin(), list_mergeable_horizontal_right.end(), block_2.id) == list_mergeable_horizontal_right.end()){
@@ -268,6 +273,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         Block new_block_1r;
         Block new_block_2r;
 
+
         // Check row split
         if (block_1.sequence_ids.size() > 1) {
             
@@ -300,7 +306,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             uniform_int_distribution<int> distribution_column_split(block_1.begin_column + 1, block_1.end_column);
             int split_point_column = distribution_column_split(generator);
 
-            auto [new_block_1c, new_block_2c] = split_block_by_row(block_1, split_number, split_point_column);
+            auto [new_block_1c, new_block_2c] = split_block_by_column(block_1, split_number, split_point_column);
             split_number += 2;
 
             string label_nb1c = new_block_1c.label;
@@ -439,18 +445,18 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         }
 
 
-
+        /*
         for (auto& entry : operation_gains) {
             cout << entry.first << ": " << entry.second << endl;
         }
-        
+        */
         // Visualizza la matrice di ID
-        print_block_id_matrix(block_id_matrix);
+        //print_block_id_matrix(block_id_matrix);
         
         // Visualizza il dizionario di blocchi
-        print_block_dict(block_dict);
+        //print_block_dict(block_dict);
 
-        cout << "\n====================================\n\n";
+        //cout << "\n====================================\n\n";
 
         // Cooling condition
         // Inizializza i contatori per gli split di riga e colonna
@@ -462,7 +468,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         row_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "row_split");
 
         // Verifica se la condizione di cooling è soddisfatta
-        if (column_split_number + row_split_number >= static_cast<int>((operations_for_cooling.size() / 100.0) * 54)) {
+        if (column_split_number + row_split_number >= static_cast<int>((operations_for_cooling.size() / 100.0) * splits_percent_for_cooling)) {
             temperature *= cooling_factor;
 
             // Reinizializza il vettore operations_for_cooling
@@ -477,13 +483,23 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
     
 }
 
+// Funzione per ottenere l'uso della memoria su Linux/macOS
+long getMemoryUsage() {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    return usage.ru_maxrss;  // Restituisce l'uso massimo della memoria in kilobyte
+}
 
 
 
 int main() {
 
+    auto start = high_resolution_clock::now();
+    long initial_memory = getMemoryUsage();
+
+
     // Leggi le sequenze dal file FASTA
-    const string alignment = "test.fa";
+    const string alignment = "10-sars-cov-2-ena.fa"; //10-sars-cov-2-ena
     auto sequences = read_fasta(alignment);
 
     // Converti le sequenze in una matrice
@@ -495,8 +511,21 @@ int main() {
     // Inserire qua euristica
     simulated_annealing(block_dict, block_id_matrix);
 
+    //check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix);
     // Costruisce il grafo e lo salva 
     Agraph_t* g = build_graph(block_dict, block_id_matrix);
+
+    long final_memory = getMemoryUsage();
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<seconds>(stop - start);
+    int total_seconds = duration.count();
+    int minutes = total_seconds / 60;
+    int seconds = total_seconds % 60;
+    double memory_usage_mb = static_cast<double>(final_memory - initial_memory) / 1024.0;
+
+    // Stampa dei risultati
+    cout << "Tempo di esecuzione: " << minutes << " minuti e " << seconds << " secondi" << endl;
+    cout << "Memoria utilizzata: " << memory_usage_mb << " MB" << endl;
 
     return 0;
 }
