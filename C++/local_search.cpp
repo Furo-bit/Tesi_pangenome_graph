@@ -14,9 +14,9 @@ T convert_to(const string& value) {
 
 
 
-void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector<string>>& block_id_matrix){
+void local_search(unordered_map<string, Block>& block_dict, vector<vector<string>>& block_id_matrix){
 
-    string params = "params_simulated_annealing_c.txt";
+    string params = "params_local_search_c.txt";
     unordered_map<string, string> config = read_config(params);
     int split_number = 0;
  // Variabili da configurare
@@ -25,11 +25,8 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
     float termination_temperature = 0.0f;
     int limit_horizontal = 0;
     int limit_vertical = 0;
-    float beta = 0.0f;
-    float cooling_factor = 0.0f;
     int threshold = 0;
     int penalization = 0;
-    int splits_percent_for_cooling = 1000;
 
     // Assegna i valori letti dalla mappa alle variabili
     if (config.find("seed") != config.end()) {
@@ -47,28 +44,16 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
     if (config.find("limit_vertical") != config.end()) {
         limit_vertical = convert_to<int>(config["limit_vertical"]);
     }
-    if (config.find("beta") != config.end()) {
-        beta = convert_to<float>(config["beta"]);
-    }
-    if (config.find("cooling_factor") != config.end()) {
-        cooling_factor = convert_to<float>(config["cooling_factor"]);
-    }
     if (config.find("threshold") != config.end()) {
         threshold = convert_to<int>(config["threshold"]);
     }
     if (config.find("penalization") != config.end()) {
         penalization = convert_to<int>(config["penalization"]);
     }
-    if (config.find("splits_percent") != config.end()) {
-        splits_percent_for_cooling = convert_to<int>(config["splits_percent"]);
-    }
 
     int rows = block_id_matrix.size();
     int cols = block_id_matrix[0].size();
     int cell_total = rows * cols;
-
-    // Creazione di un vettore di dimensione rows * 15, con valori di default null (o nullptr per puntatori)
-    vector<string> operations_for_cooling(rows * 15, "new_start");
 
     if (limit_horizontal == -1) {
         limit_horizontal = cols;
@@ -85,17 +70,20 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
     // Inizializza il generatore di numeri casuali con un seed
     mt19937 generator(seed);  // Usa il seed passato come parametro
     uniform_int_distribution<int> distribution(1, cell_total);
+    
+    vector<int> random_numbers;
+    // Genera una sequenza di numeri casuali lunga cell_total
+    for (int i = 0; i < cell_total; ++i) {
+        random_numbers.push_back(distribution(generator));
+    }
 
 
-    while (true)
+    for (const int& num : random_numbers)
     { 
-        // Genera un numero casuale tra 1 e cell_total
-        int random_number = distribution(generator);
 
         // Trasforma il numero casuale in indici della matrice
-        int row_index = (random_number - 1) / cols;
-        int col_index = (random_number - 1) % cols;
-
+        int row_index = (num - 1) / cols;
+        int col_index = (num - 1) % cols;
         // Accedi al blocco corrispondente usando gli indici
         Block block_1 = block_dict.at(block_id_matrix[row_index][col_index]);
         //print_block(block_1);
@@ -280,7 +268,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             uniform_int_distribution<int> distribution_row_split(1, block_1.sequence_ids.size() - 1);
             int split_point_row = distribution_row_split(generator);
 
-            auto [new_block_1r, new_block_2r] = split_block_by_row(block_1, split_number, split_point_row);
+            tie(new_block_1r, new_block_2r) = split_block_by_row(block_1, split_number, split_point_row);
             split_number += 2;
 
             string label_nb1r = new_block_1r.label;
@@ -295,7 +283,6 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             
             operation_gains["row_split"] = delta;
         }
-        
 
         Block new_block_1c;
         Block new_block_2c;
@@ -306,7 +293,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             uniform_int_distribution<int> distribution_column_split(block_1.begin_column + 1, block_1.end_column);
             int split_point_column = distribution_column_split(generator);
 
-            auto [new_block_1c, new_block_2c] = split_block_by_column(block_1, split_number, split_point_column);
+            tie(new_block_1c, new_block_2c) = split_block_by_column(block_1, split_number, split_point_column);
             split_number += 2;
 
             string label_nb1c = new_block_1c.label;
@@ -325,7 +312,6 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         }
 
         // Select operation
-        int probability;
         if (!operation_gains.empty()) {
             // Converti unordered_map in un vettore di coppie per poter ordinare
             vector<pair<string, int>> sorted_gains(operation_gains.begin(), operation_gains.end());
@@ -339,17 +325,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             // Prendi la prima operazione e il suo guadagno dopo aver ordinato
             string operation = sorted_gains.front().first;
             float gain = sorted_gains.front().second;
-
-            // Aggiorna il vettore operations_for_cooling
-            operations_for_cooling.insert(operations_for_cooling.begin(), operation);
-            operations_for_cooling.pop_back(); // Rimuove l'ultimo elemento
-
-            int probability = 1;
-            
-            if (operation == "column_split" || operation == "row_split"){
-                probability = acceptance_probability(gain, temperature, beta);
-            }
-            else if (operation == "column_merge")
+            if (operation == "column_merge")
             {
 
                 // Column merge
@@ -371,51 +347,65 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
                 }
             }
             else if (operation == "row_split"){
-                if (distribution(generator) / static_cast<float>(cell_total) < probability) {
 
-                    // Row split - Aggiorna new_block_1r
-                    for (auto& sequence : new_block_1r.sequence_ids) {
-                        for (int column = new_block_1r.begin_column; column <= new_block_1r.end_column; ++column) {
-                            block_id_matrix[sequence][column] = new_block_1r.id;
-                        }
+                // Row split - Aggiorna new_block_1r
+                for (auto& sequence : new_block_1r.sequence_ids) {
+                    for (int column = new_block_1r.begin_column; column <= new_block_1r.end_column; ++column) {
+                        block_id_matrix[sequence][column] = new_block_1r.id;
                     }
-
-                    // Row split - Aggiorna new_block_2r
-                    for (auto& sequence : new_block_2r.sequence_ids) {
-                        for (int column = new_block_2r.begin_column; column <= new_block_2r.end_column; ++column) {
-                            block_id_matrix[sequence][column] = new_block_2r.id;
-                        }
-                    }
-
-                    // Aggiorna il dizionario
-                    block_dict.erase(block_1.id);  // Elimina il vecchio blocco
-                    block_dict[new_block_1r.id] = new_block_1r;  // Aggiungi new_block_1r
-                    block_dict[new_block_2r.id] = new_block_2r;  // Aggiungi new_block_2r
                 }
+
+                // Row split - Aggiorna new_block_2r
+                for (auto& sequence : new_block_2r.sequence_ids) {
+                    for (int column = new_block_2r.begin_column; column <= new_block_2r.end_column; ++column) {
+                        block_id_matrix[sequence][column] = new_block_2r.id;
+                    }
+                }
+                /*
+                // Visualizza la matrice di ID
+                print_block_id_matrix(block_id_matrix);
+                
+                // Visualizza il dizionario di blocchi
+                print_block_dict(block_dict);
+                print_block(block_1);
+                print_block(new_block_1r);
+                print_block(new_block_2r);
+                */
+                // Aggiorna il dizionario
+                block_dict.erase(block_1.id);  // Elimina il vecchio blocco
+                block_dict[new_block_1r.id] = new_block_1r;  // Aggiungi new_block_1r
+                block_dict[new_block_2r.id] = new_block_2r;  // Aggiungi new_block_2r
 
             }
             else if (operation == "column_split"){
-                if (distribution(generator) / static_cast<float>(cell_total) < probability) {
-
-                    // Column split - Aggiorna new_block_1c
-                    for (auto& sequence : new_block_1c.sequence_ids) {
-                        for (int column = new_block_1c.begin_column; column <= new_block_1c.end_column; ++column) {
-                            block_id_matrix[sequence][column] = new_block_1c.id;
-                        }
+                // Column split - Aggiorna new_block_1c
+                for (auto& sequence : new_block_1c.sequence_ids) {
+                    for (int column = new_block_1c.begin_column; column <= new_block_1c.end_column; ++column) {
+                        block_id_matrix[sequence][column] = new_block_1c.id;
                     }
-
-                    // Column split - Aggiorna new_block_2c
-                    for (auto& sequence : new_block_2c.sequence_ids) {
-                        for (int column = new_block_2c.begin_column; column <= new_block_2c.end_column; ++column) {
-                            block_id_matrix[sequence][column] = new_block_2c.id;
-                        }
-                    }
-
-                    // Aggiorna il dizionario
-                    block_dict.erase(block_1.id);  // Elimina il vecchio blocco
-                    block_dict[new_block_1c.id] = new_block_1c;  // Aggiungi new_block_1c
-                    block_dict[new_block_2c.id] = new_block_2c;  // Aggiungi new_block_2c
                 }
+
+                // Column split - Aggiorna new_block_2c
+                for (auto& sequence : new_block_2c.sequence_ids) {
+                    for (int column = new_block_2c.begin_column; column <= new_block_2c.end_column; ++column) {
+                        block_id_matrix[sequence][column] = new_block_2c.id;
+                    }
+                }
+                /*
+                // Visualizza la matrice di ID
+                print_block_id_matrix(block_id_matrix);
+                
+                // Visualizza il dizionario di blocchi
+                print_block_dict(block_dict);
+                print_block(block_1);
+                print_block(new_block_1c);
+                print_block(new_block_2c);
+                */
+                // Aggiorna il dizionario
+                block_dict.erase(block_1.id);  // Elimina il vecchio blocco
+                block_dict[new_block_1c.id] = new_block_1c;  // Aggiungi new_block_1c
+                block_dict[new_block_2c.id] = new_block_2c;  // Aggiungi new_block_2c
+            
             }
             else if (operation == "row_merge_greedy"){
                 for (auto& comp_list : list_mergeable_vertical_greedy) {
@@ -458,27 +448,6 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
 
         //cout << "\n====================================\n\n";
 
-        // Cooling condition
-        // Inizializza i contatori per gli split di riga e colonna
-        int column_split_number = 0;
-        int row_split_number = 0;
-
-        // Conta il numero di "column_split" e "row_split" nel vettore operations_for_cooling
-        column_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "column_split");
-        row_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "row_split");
-
-        // Verifica se la condizione di cooling è soddisfatta
-        if (column_split_number + row_split_number >= static_cast<int>((operations_for_cooling.size() / 100.0) * splits_percent_for_cooling)) {
-            temperature *= cooling_factor;
-
-            // Reinizializza il vettore operations_for_cooling
-            operations_for_cooling = vector<string>(rows * 15, "new_start");
-        }
-
-        // Controlla se la temperatura ha raggiunto il livello di terminazione
-        if (temperature <= termination_temperature) {
-            break;
-        }
     }
     
 }
@@ -509,7 +478,7 @@ int main() {
     auto [block_dict, block_id_matrix] = build_blocks_from_sequence_matrix(sequence_matrix);
 
     // Inserire qua euristica
-    simulated_annealing(block_dict, block_id_matrix);
+    local_search(block_dict, block_id_matrix);
 
     //check_id_matrix_consistency(block_id_matrix, block_dict, sequence_matrix);
     // Costruisce il grafo e lo salva 

@@ -274,7 +274,6 @@ tuple<Block, Block> split_block_by_row(const Block& block, int split_number, int
         block.begin_column,
         block.end_column
     };
-
     return make_tuple(part1, part2);
 }
 
@@ -318,7 +317,6 @@ tuple<Block, Block> split_block_by_column(const Block& block, int split_number, 
         split_point,
         end_column
     };
-
     return make_tuple(part1, part2);
 }
 
@@ -588,6 +586,185 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
         agset(node, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
     }
 
+    
+
+    // aggiunta archi
+    // nuova soluzione
+    
+    // Iterare su tutti gli elementi della mappa e inserire le chiavi nel vettore
+    vector<string> keys;
+    for (const auto& pair : block_dict) {
+        keys.push_back(pair.first);  
+    }
+    
+    // Ottenere la dimensione della mappa
+    size_t n = block_dict.size();
+
+    // Creare una matrice n x n di stringhe vuote
+    vector<vector<string>> label_matrix(n, vector<string>(n, "")); // inizializza con stringhe vuote
+
+    //creo e salvo nella matrice delle label le etichette degli archi
+    size_t rows = block_id_matrix.size();
+    size_t cols = block_id_matrix[0].size();
+
+    agattr(g, AGEDGE, const_cast<char*>("label"), const_cast<char*>(""));
+
+    
+    // archi normali
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = 0; col < cols - 1; ++col) {
+            string block_1_id = block_id_matrix[row][col];
+            const Block& block_1 = block_dict.at(block_1_id);
+            if (!all_of(block_1.label.begin(), block_1.label.end(), [](char c) { return c == '-'; })) {
+                for (size_t col2 = col + 1; col2 < cols; ++col2) {
+                    string block_2_id = block_id_matrix[row][col2];
+                    const Block& block_2 = block_dict.at(block_2_id);
+                    if (!all_of(block_2.label.begin(), block_2.label.end(), [](char c) { return c == '-'; }) && block_1_id != block_2_id) {
+                        
+                        //aggiorno il valore della label
+                        for (size_t i = 0; i < n; ++i) {
+                            if (block_1_id == keys[i]){
+                                for (size_t j = 0; j < n; ++j) {
+                                    if (block_2_id == keys[j]){
+                                        string label = label_matrix[i][j];
+                                        if (label == ""){
+                                            label = to_string(row);
+                                            label_matrix[i][j] = label;
+                                        }
+                                        else{
+                                            if (!check_number_in_string(row, label)){
+                                                label = label + "," + to_string(row);
+                                                label_matrix[i][j] = label;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // creo gli archi normali
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+           if (label_matrix[i][j] != ""){
+                string block_1_id = keys[i];
+                string block_2_id = keys[j];
+                
+                // Trova il nodo per block_1_id
+                Agnode_t* node_1 = agnode(g, const_cast<char*>(block_1_id.c_str()), false);
+                
+                // Trova il nodo per block_2_id
+                Agnode_t* node_2 = agnode(g, const_cast<char*>(block_2_id.c_str()), false);
+                
+                Agedge_t* e = agedge(g, node_1, node_2, nullptr, true);
+                agset(e, (char*)"label", strdup(label_matrix[i][j].c_str()));
+           }
+        }      
+    }
+    
+    // archi source
+    vector<string> source_labels(n, "");
+
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = 0; col < cols - 1; ++col) {
+            string block_id = block_id_matrix[row][col];
+            const Block& block = block_dict.at(block_id);
+            if (!all_of(block.label.begin(), block.label.end(), [](char c) { return c == '-'; })) {
+                 
+            //aggiorno il valore della label
+                for (size_t i = 0; i < n; ++i) {
+                    if (block_id == keys[i]){
+                       
+                        string label = source_labels[i];
+                        if (label == ""){
+                            label = to_string(row);
+                            source_labels[i] = label;
+                        }
+                        else{
+                            if (!check_number_in_string(row, label)){
+                                label = label + "," + to_string(row);
+                                source_labels[i] = label;
+                            }
+                        }   
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    // creo gli archi source
+    for (size_t i = 0; i < n; ++i) {   
+        if (source_labels[i] != ""){
+            string block_1_id = keys[i];
+
+            // Trova il nodo per block_1_id
+            Agnode_t* node = agnode(g, const_cast<char*>(block_1_id.c_str()), false);
+            Agedge_t* e = agedge(g, source, node, nullptr, true);
+            agset(e, (char*)"label", strdup(source_labels[i].c_str()));
+        }     
+    }
+
+
+    // archi sink
+    vector<string> sink_labels(n, "");
+
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = cols - 1; col >= 0; --col) {
+            string block_id = block_id_matrix[row][col];
+            const Block& block = block_dict.at(block_id);
+            if (!all_of(block.label.begin(), block.label.end(), [](char c) { return c == '-'; })) {
+                 
+            //aggiorno il valore della label
+                for (size_t i = 0; i < n; ++i) {
+                    if (block_id == keys[i]){
+                       
+                        string label = sink_labels[i];
+                        if (label == ""){
+                            label = to_string(row);
+                            sink_labels[i] = label;
+                        }
+                        else{
+                            if (!check_number_in_string(row, label)){
+                                label = label + "," + to_string(row);
+                                sink_labels[i] = label;
+                            }
+                        }   
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    // creo gli archi sink
+    for (size_t i = 0; i < n; ++i) {   
+        if (sink_labels[i] != ""){
+            string block_1_id = keys[i];
+
+            // Trova il nodo per block_1_id
+            Agnode_t* node = agnode(g, const_cast<char*>(block_1_id.c_str()), false);
+            Agedge_t* e = agedge(g, node, sink, nullptr, true);
+            agset(e, (char*)"label", strdup(sink_labels[i].c_str()));
+        }     
+    }
+    
+
+
+
+
+
+
+
+    /*
+    // vecchia soluzione
     size_t rows = block_id_matrix.size();
     size_t cols = block_id_matrix[0].size();
 
@@ -672,7 +849,7 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
         }
     }
 
-    /* cout << "Costruzione archi" << endl;
+     cout << "Costruzione archi" << endl;
     // Aggiungi gli archi normali
     for (size_t row = 0; row < rows; ++row) {
         for (size_t col = 0; col < cols - 1; ++col) {
