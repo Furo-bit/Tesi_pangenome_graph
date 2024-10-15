@@ -83,11 +83,12 @@ vector<vector<char>> sequences_to_matrix(const unordered_map<string, vector<char
     size_t length = sequences.begin()->second.size();
 
     for (const auto& pair : sequences) {
-
+        /*
         if (pair.second.size() != length) {
             cerr << "Le sequenze non hanno la stessa lunghezza!" << endl;
             return {};
         }
+        */
         matrix.push_back(pair.second);
     }
     
@@ -756,145 +757,6 @@ Agraph_t* build_graph(const unordered_map<string, Block>& block_dict, const vect
         }     
     }
     
-
-
-
-
-
-
-
-    /*
-    // vecchia soluzione
-    size_t rows = block_id_matrix.size();
-    size_t cols = block_id_matrix[0].size();
-
-    agattr(g, AGEDGE, const_cast<char*>("label"), const_cast<char*>(""));
-
-    cout << "Costruzione archi source" << endl;
-    // Archi di source
-    for (size_t row = 0; row < rows; ++row) {
-        for (size_t col = 0; col < cols - 1; ++col) {
-            string block_id = block_id_matrix[row][col];
-            const Block& block = block_dict.at(block_id);
-            if (!all_of(block.label.begin(), block.label.end(), [](char c) { return c == '-'; })) {
-                 
-                // Trova il nodo per block_2_id
-                Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), false);
-                
-                // Crea o trova l'arco tra node_1 e node_2
-                Agedge_t* e = agedge(g, source, node, nullptr, true);
-                
-                //printEdgeInfo(e);
-
-                string label = to_string(row);
-                if (e != nullptr) {
-                    
-                    // Verifica se esiste già l'etichetta
-                    char* label_ptr = agget(e, const_cast<char*>("label"));
-                    if (label_ptr != nullptr) {
-                        string existing_labels(label_ptr);  // Costruisce la stringa solo se label_ptr non è nullo
-                        if (!existing_labels.empty() && !check_number_in_string(row, existing_labels)) {
-                            label = existing_labels + "," + to_string(row);
-                        }
-                    }
-                
-                    // Crea una copia della stringa per passare a agset
-                    //agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
-                    agset(e, (char*)"label", strdup(label.c_str()));  // Usa strdup per evitare problemi di memoria
-                    //printEdgeInfo(e);
-
-                    char* new_label = agget(e, (char*)"label");
-                }
-
-                 
-
-                break;
-            }
-        }
-    }
-
-    cout << "Costruzione archi sink" << endl;
-    // Archi di sink 
-    for (size_t row = 0; row < rows; ++row) {
-        for (size_t col = cols - 1; col >= 0; --col) {
-            string block_id = block_id_matrix[row][col];
-            const Block& block = block_dict.at(block_id);
-            if (!all_of(block.label.begin(), block.label.end(), [](char c) { return c == '-'; })) {
-                 
-                // Trova il nodo per block_2_id
-                Agnode_t* node = agnode(g, const_cast<char*>(block_id.c_str()), false);
-                
-                // Crea o trova l'arco tra node_1 e node_2
-                Agedge_t* e = agedge(g, node, sink, nullptr, TRUE);
-                
-                string label = to_string(row);
-                if (e != nullptr) {
-                
-                    // Verifica se esiste già l'etichetta
-                    char* label_ptr = agget(e, const_cast<char*>("label"));
-                    if (label_ptr != nullptr) {
-                        string existing_labels(label_ptr);  // Costruisce la stringa solo se label_ptr non è nullo
-                        if (!existing_labels.empty() && !check_number_in_string(row, existing_labels)) {
-                            label = existing_labels + "," + to_string(row);
-                        }
-                    }
-                
-                    // Crea una copia della stringa per passare a agset
-                    agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
-                
-                
-                }
-            break;
-            }
-        }
-    }
-
-     cout << "Costruzione archi" << endl;
-    // Aggiungi gli archi normali
-    for (size_t row = 0; row < rows; ++row) {
-        for (size_t col = 0; col < cols - 1; ++col) {
-            string block_1_id = block_id_matrix[row][col];
-            const Block& block_1 = block_dict.at(block_1_id);
-            if (!all_of(block_1.label.begin(), block_1.label.end(), [](char c) { return c == '-'; })) {
-                for (size_t col2 = col + 1; col2 < cols; ++col2) {
-                    string block_2_id = block_id_matrix[row][col2];
-                    const Block& block_2 = block_dict.at(block_2_id);
-                    if (!all_of(block_2.label.begin(), block_2.label.end(), [](char c) { return c == '-'; }) && block_1_id != block_2_id) {
-                        
-                        // Trova il nodo per block_1_id
-                        Agnode_t* node_1 = agnode(g, const_cast<char*>(block_1_id.c_str()), false);
-                        
-                        // Trova il nodo per block_2_id
-                        Agnode_t* node_2 = agnode(g, const_cast<char*>(block_2_id.c_str()), false);
-                        
-                        // Crea o trova l'arco tra node_1 e node_2
-                        Agedge_t* e = agedge(g, node_1, node_2, nullptr, TRUE);
-                        
-                        string label = to_string(row);
-                        if (e != nullptr) {
-                        
-                            // Verifica se esiste già l'etichetta
-                            char* label_ptr = agget(e, const_cast<char*>("label"));
-                            if (label_ptr != nullptr) {
-                                string existing_labels(label_ptr);  // Costruisce la stringa solo se label_ptr non è nullo
-                                if (!existing_labels.empty() && !check_number_in_string(row, existing_labels)) {
-                                    label = existing_labels + "," + to_string(row);
-                                }
-                            }
-                        
-                            // Crea una copia della stringa per passare a agset
-                            int result = agset(e, const_cast<char*>("label"), const_cast<char*>(label.c_str()));
-
-                        }
-                        
-
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    */
 
     remove_indel_nodes(g);
     //print_graph(g);

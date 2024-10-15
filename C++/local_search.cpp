@@ -468,7 +468,7 @@ int main() {
 
 
     // Leggi le sequenze dal file FASTA
-    const string alignment = "10-sars-cov-2-ena.fa"; //10-sars-cov-2-ena
+    const string alignment = "MSAs/30-sars-cov-2-ena.fa"; //10-sars-cov-2-ena
     auto sequences = read_fasta(alignment);
 
     // Converti le sequenze in una matrice

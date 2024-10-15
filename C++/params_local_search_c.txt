@@ -1,0 +1,7 @@
+[parameters]
+seed=443
+start=unitary_blocks
+limit_horizontal=1
+limit_vertical=-1
+threshold=20
+penalization=1000

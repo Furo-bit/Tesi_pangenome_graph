@@ -325,7 +325,6 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         }
 
         // Select operation
-        int probability;
         if (!operation_gains.empty()) {
             // Converti unordered_map in un vettore di coppie per poter ordinare
             vector<pair<string, int>> sorted_gains(operation_gains.begin(), operation_gains.end());
@@ -339,18 +338,20 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
             // Prendi la prima operazione e il suo guadagno dopo aver ordinato
             string operation = sorted_gains.front().first;
             float gain = sorted_gains.front().second;
+ 
 
             // Aggiorna il vettore operations_for_cooling
             operations_for_cooling.insert(operations_for_cooling.begin(), operation);
             operations_for_cooling.pop_back(); // Rimuove l'ultimo elemento
 
-            int probability = 1;
+            float probability = 1.0f;
             
             if (operation == "column_split" || operation == "row_split"){
                 probability = acceptance_probability(gain, temperature, beta);
-                cout << probability << endl;
+           
             }
-            else if (operation == "column_merge")
+
+            if (operation == "column_merge")
             {
 
                 // Column merge
@@ -372,8 +373,9 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
                 }
             }
             else if (operation == "row_split"){
-                if (distribution(generator) / static_cast<float>(cell_total) < probability) {
-
+                float x = distribution(generator) / static_cast<float>(cell_total);
+                if (x < probability) {
+                    
                     // Row split - Aggiorna new_block_1r
                     for (auto& sequence : new_block_1r.sequence_ids) {
                         for (int column = new_block_1r.begin_column; column <= new_block_1r.end_column; ++column) {
@@ -396,8 +398,9 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
 
             }
             else if (operation == "column_split"){
-                if (distribution(generator) / static_cast<float>(cell_total) < probability) {
-
+                float x = distribution(generator) / static_cast<float>(cell_total);
+                if (x / static_cast<float>(cell_total) < probability) {
+                    
                     // Column split - Aggiorna new_block_1c
                     for (auto& sequence : new_block_1c.sequence_ids) {
                         for (int column = new_block_1c.begin_column; column <= new_block_1c.end_column; ++column) {
@@ -468,6 +471,7 @@ void simulated_annealing(unordered_map<string, Block>& block_dict, vector<vector
         column_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "column_split");
         row_split_number = count(operations_for_cooling.begin(), operations_for_cooling.end(), "row_split");
 
+
         // Verifica se la condizione di cooling è soddisfatta
         if (column_split_number + row_split_number >= static_cast<int>((operations_for_cooling.size() / 100.0) * splits_percent_for_cooling)) {
             temperature *= cooling_factor;
@@ -500,7 +504,7 @@ int main() {
 
 
     // Leggi le sequenze dal file FASTA
-    const string alignment = "10-sars-cov-2-ena.fa"; //10-sars-cov-2-ena
+    const string alignment = "MSAs/30-sars-cov-2-ena.fa"; //10-sars-cov-2-ena
     auto sequences = read_fasta(alignment);
 
     // Converti le sequenze in una matrice
